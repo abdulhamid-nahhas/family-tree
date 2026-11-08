@@ -1346,14 +1346,29 @@ function handleAvatarUpload(e){
   if(f.size>15*1024*1024){showToast('الصورة أكبر من 15MB');return}
   /* أزل modal قديم لضمان بداية نظيفة */
   const old=document.getElementById('crop-modal');if(old)old.remove();
-  const r=new FileReader();
-  r.onload=ev=>{
-    const img=new Image();
-    img.onload=()=>{ cropImg=img; openCropModal(); };
-    img.src=ev.target.result;
-  };
-  r.readAsDataURL(f);
   e.target.value='';
+  loadPhotoFile(f);
+}
+/* يقرأ الصورة — ويحوّل صور الآيفون HEIC إلى JPG تلقائياً */
+async function loadPhotoFile(f){
+  const isHeic=/heic|heif/i.test(f.type)||/\.(heic|heif)$/i.test(f.name);
+  let blob=f;
+  if(isHeic){
+    showToast('⏳ جاري تجهيز الصورة...');
+    try{
+      if(!window.heic2any){
+        await new Promise((ok,no)=>{const sc=document.createElement('script');
+          sc.src='https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js';sc.onload=ok;sc.onerror=no;document.head.appendChild(sc);});
+      }
+      const out=await window.heic2any({blob:f,toType:'image/jpeg',quality:.9});
+      blob=Array.isArray(out)?out[0]:out;
+    }catch(err){console.error('heic',err);}
+  }
+  const url=URL.createObjectURL(blob);
+  const img=new Image();
+  img.onload=()=>{cropImg=img;openCropModal();};
+  img.onerror=()=>{URL.revokeObjectURL(url);showToast('⚠ ما قدرت أفتح الصورة — جرّب صورة JPG أو PNG');};
+  img.src=url;
 }
 
 function openCropModal(){
@@ -1368,7 +1383,7 @@ function openCropModal(){
   /* ── إنشاء modal جديد في كل مرة ── */
   const modal=document.createElement('div');
   modal.id='crop-modal';
-  modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:400;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px';
+  modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:1000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px';
   modal.innerHTML=`
     <div style="color:#fff;font-family:var(--ffb);font-size:.82rem;opacity:.75;text-align:center">حرك الصورة ثم اضغط تطبيق</div>
     <canvas id="crop-canvas" width="${CS}" height="${CS}" style="border-radius:50%;cursor:grab;touch-action:none;border:3px solid var(--gold);display:block"></canvas>
