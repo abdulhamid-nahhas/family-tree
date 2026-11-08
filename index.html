@@ -72,6 +72,8 @@ body{font-family:var(--ffb);background:var(--bg);color:var(--fg);display:flex;fl
 .line-wife{stroke:var(--rose);stroke-width:2.5;stroke-dasharray:6 4;opacity:.75}
 .line-spouse{stroke:var(--rose);stroke-width:2;stroke-dasharray:6 4;opacity:.75}
 .line-child{stroke:var(--gold-lt);stroke-width:1.5;fill:none;opacity:.85}
+/* خط الابنة — ذهبي منقط */
+.line-daughter{stroke:var(--gold-lt);stroke-width:1.5;fill:none;opacity:.85;stroke-dasharray:6 4}
 .node{position:absolute;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;transition:opacity .35s,transform .35s;user-select:none}
 .node.hidden{opacity:0;pointer-events:none;transform:translate(-50%,-50%) scale(.4)}
 .node.visible{opacity:1;transform:translate(-50%,-50%) scale(1)}
@@ -152,6 +154,7 @@ textarea.info-field-input{resize:vertical;min-height:46px}
 #full-tree-svg:active{cursor:grabbing}
 .ft-line{stroke:var(--gold-lt);stroke-width:1;fill:none;opacity:.6}
 .ft-line-wife{stroke:var(--rose);stroke-dasharray:4 2;opacity:.5}
+.ft-line-daughter{stroke:var(--gold-lt);stroke-width:1;fill:none;opacity:.6;stroke-dasharray:4 2}
 
 /* ── PROFILES TAB ── */
 .profiles-wrap{flex:1;overflow-y:auto;padding:12px}
@@ -241,7 +244,9 @@ textarea.form-input{resize:vertical;min-height:52px}
   <div class="leg"><div class="leg-circle leg-f"></div>أنثى</div>
   <div class="leg"><div class="leg-circle leg-rada" style="border-color:var(--blue)"></div>ابن رضاعة</div>
   <div class="leg"><div class="leg-circle leg-rada" style="border-color:var(--rose)"></div>ابنة رضاعة</div>
-  <div class="leg"><div style="width:26px;height:0;border-top:2.5px solid var(--gold-lt);opacity:.85"></div>أبناء</div>
+  <div class="leg"><div style="width:26px;height:0;border-top:2.5px solid var(--gold-lt);opacity:.85"></div>ابن</div>
+  <div class="leg"><div style="width:26px;height:0;border-top:2.5px dashed var(--gold-lt);opacity:.85"></div>ابنة</div>
+  <div class="leg"><div style="width:26px;height:0;border-top:2.5px solid var(--rose);opacity:.85"></div>زوج</div>
   <div class="leg"><div style="width:26px;height:0;border-top:2.5px dashed var(--rose);opacity:.85"></div>زوجة</div>
 </div>
 
@@ -746,11 +751,13 @@ function drawLine(a,b,isWife=false){
   const my=(fy+ty)/2;
   const path=document.createElementNS('http://www.w3.org/2000/svg','path');
   path.setAttribute('d',`M${fx},${fy} C${fx},${my} ${tx},${my} ${tx},${ty}`);
-  /* نوع الخط: زوج/زوجة → منقط، ابن/ابنة → متصل */
+  /* نوع الخط: زوج/زوجة → وردي منقط، ابن → ذهبي متصل، ابنة → ذهبي منقط */
   const rt=FAM[b]?.relType;
+  const sex=FAM[b]?.sex;
   let cls='line';
   if(isWife||rt==='husband'||rt==='wife') cls+=' line-wife';
-  else if(rt==='son'||rt==='daughter') cls+=' line-child';
+  else if(rt==='daughter'||rt==='daughter-rada'||(rt==null&&sex==='f')) cls+=' line-daughter';
+  else cls+=' line-child';
   path.setAttribute('class',cls);
   linesSVG.appendChild(path);lineEls.push(path);
   setTimeout(()=>path.classList.add('drawn'),30);
@@ -783,17 +790,19 @@ function calcAge(birthStr,deathStr){
 function updateAgeDisplay(){
   const bVal=document.getElementById('edit-birth').value;
   const dVal=document.getElementById('edit-death').value;
-  const r=calcAge(bVal,dVal);
   const ageInput=document.getElementById('edit-age');
   const badge=document.getElementById('info-age-badge');
+  /* إذا كان في خانة الوفاة قيمة، لا نحسب العمر */
+  if(dVal && dVal.trim()){
+    if(ageInput && document.activeElement!==ageInput) ageInput.value='';
+    if(badge) badge.textContent='';
+    return;
+  }
+  const r=calcAge(bVal,dVal);
   if(r.age!==null && r.age>=0 && r.age<150){
     /* اعرض العمر في المربع فقط إذا لم يكن المستخدم يكتب فيه */
     if(ageInput && document.activeElement!==ageInput) ageInput.value=r.age;
-    if(r.death){
-      if(badge) badge.textContent='⚰ توفي — عاش '+r.age+' سنة';
-    } else {
-      if(badge) badge.textContent='🎂 العمر: '+r.age+' سنة';
-    }
+    if(badge) badge.textContent='🎂 العمر: '+r.age+' سنة';
   } else {
     if(ageInput && document.activeElement!==ageInput) ageInput.value='';
     if(badge) badge.textContent='';
@@ -962,11 +971,18 @@ function buildFullTree(){
   svg.setAttribute('viewBox',`0 0 ${svgW} ${svgH}`);
   svg.setAttribute('width',svgW);svg.setAttribute('height',svgH);
 
-  function mkLine(x1,y1,x2,y2,wife=false){
+  function mkLine(x1,y1,x2,y2,childId=null,wife=false){
     const path=document.createElementNS(NS,'path');
     const my=(y1+y2)/2;
     path.setAttribute('d',`M${x1},${y1} C${x1},${my} ${x2},${my} ${x2},${y2}`);
-    path.setAttribute('class','ft-line'+(wife?' ft-line-wife':''));
+    let cls='ft-line';
+    if(wife) cls+=' ft-line-wife';
+    else if(childId){
+      const rt=FAM[childId]?.relType;
+      const sx=FAM[childId]?.sex;
+      if(rt==='daughter'||rt==='daughter-rada'||(rt==null&&sx==='f')) cls+=' ft-line-daughter';
+    }
+    path.setAttribute('class',cls);
     svg.insertBefore(path,svg.firstChild);
   }
   function mkNode(id,pos){
@@ -999,11 +1015,11 @@ function buildFullTree(){
   const pZ=positions['zamil'];
   wives.forEach(w=>{
     const pw=positions[w];if(!pw)return;
-    mkLine(pZ.x,pZ.y,pw.x,pw.y,true);
+    mkLine(pZ.x,pZ.y,pw.x,pw.y,null,true);
     (FAM[w].children||[]).forEach(k=>{
       const pk=positions[k];if(!pk)return;
-      mkLine(pw.x,pw.y,pk.x,pk.y);
-      (FAM[k]?.children||[]).forEach(gk=>{const pg=positions[gk];if(pg)mkLine(pk.x,pk.y,pg.x,pg.y)});
+      mkLine(pw.x,pw.y,pk.x,pk.y,k);
+      (FAM[k]?.children||[]).forEach(gk=>{const pg=positions[gk];if(pg)mkLine(pk.x,pk.y,pg.x,pg.y,gk)});
     });
   });
   Object.entries(positions).forEach(([id,pos])=>mkNode(id,pos));
@@ -1240,10 +1256,21 @@ function applyCrop(cv,modal){
 /* يرتب أبناء شخص حسب order (من لا order له يأتي آخراً بترتيب إضافته) */
 function sortedChildren(id){
   const kids=(FAM[id]?.children||[]).slice();
+  /* استخرج سنة الميلاد من نص الميلاد */
+  function birthYear(x){
+    const b=FAM[x]?.birth||'';
+    const m=b.match(/\d{4}/);
+    return m?parseInt(m[0]):9999;
+  }
   kids.sort((a,b)=>{
-    const oa=FAM[a]?.order??9999;
-    const ob=FAM[b]?.order??9999;
-    return oa-ob;
+    const oa=FAM[a]?.order;
+    const ob=FAM[b]?.order;
+    /* اللي عنده order صريح يتقدم على اللي ليس له order */
+    if(oa!=null && ob!=null) return oa-ob;
+    if(oa!=null) return -1;
+    if(ob!=null) return 1;
+    /* كلاهما بدون order: رتّب بحسب سنة الميلاد */
+    return birthYear(a)-birthYear(b);
   });
   return kids;
 }
@@ -1260,17 +1287,19 @@ function saveEdit(){
   const death=document.getElementById('edit-death').value.trim();
   if(!shortVal){showToast('الاسم الأول مطلوب');return}
 
-  /* تحقق من تكرار الترتيب بين الإخوة */
-  if(orderVal){
-    const parId=FAM[editingId]?.par;
-    if(parId&&FAM[parId]){
-      const siblings=(FAM[parId].children||[]).filter(s=>s!==editingId);
-      const dup=siblings.find(s=>FAM[s]?.order===orderVal);
-      if(dup){
-        showToast('⚠ الترتيب '+orderVal+' مستخدم لـ "'+(FAM[dup].short||FAM[dup].name)+'" — اختر رقماً آخر');
-        return;
-      }
-    }
+  /* معالجة الترتيب بين الإخوة */
+  const parId=FAM[editingId]?.par;
+  if(orderVal && parId && FAM[parId]){
+    /* إذا تكرر الرقم: نزيح كل من له نفس الرقم أو أكبر +1 */
+    const siblings=(FAM[parId].children||[]).filter(s=>s!==editingId);
+    siblings.forEach(s=>{
+      if(FAM[s]?.order!=null && FAM[s].order>=orderVal) FAM[s].order++;
+    });
+  } else if(!orderVal && parId && FAM[parId]){
+    /* إذا حُذف الترتيب: اضغط الفجوات في أرقام الإخوة */
+    const siblings=(FAM[parId].children||[]).filter(s=>s!==editingId&&FAM[s]?.order!=null);
+    siblings.sort((a,b)=>FAM[a].order-FAM[b].order);
+    siblings.forEach((s,i)=>{ FAM[s].order=i+1; });
   }
 
   FAM[editingId].short=shortVal;
