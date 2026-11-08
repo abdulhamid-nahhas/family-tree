@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>شجرة عائلة آل زامل نحاس</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <style>
 :root {
   --gold: #c9a84c;
@@ -499,41 +500,52 @@ body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', Tahom
 
 <script>
 // =============================================
-// CONFIG
+// CONFIG — Supabase
 // =============================================
-const WORKER_URL = 'https://family-tree-api.eng-hmedo.workers.dev';
-// fallback: localStorage if worker unavailable
-let USE_WORKER = true;
+const SUPABASE_URL  = 'https://thzczmcuybqrvcxgfzny.supabase.co';
+const SUPABASE_KEY  = 'sb_publishable_HCoYRY02NYDPochgwM9QwA_h8Oe3rs4';
 
 // =============================================
 // DATA
 // =============================================
 let FAM = {};
-let dataSha = null;
+let _sb = null;
+
+function getSB() {
+  if (_sb) return _sb;
+  _sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  return _sb;
+}
 
 // =============================================
-// LOAD DATA
+// SUPABASE HELPERS
 // =============================================
 async function loadData() {
-  if (USE_WORKER) {
-    try {
-      const r = await fetch(`${WORKER_URL}/data`);
-      if (r.ok) {
-        const j = await r.json();
-        FAM = j.data?.FAM || {};
-        dataSha = j.sha;
-        // seed root if empty
-        if (!FAM['zamil']) seedRoot();
-        renderCurrent();
-        return;
-      }
-    } catch(e) {}
-    USE_WORKER = false;
+  try {
+    const sb = getSB();
+    const { data, error } = await sb.from('members').select('id, data');
+    if (error) throw error;
+    FAM = {};
+    for (const row of (data || [])) {
+      FAM[row.id] = row.data;
+    }
+  } catch(e) {
+    console.error('loadData error', e);
+    try { FAM = JSON.parse(localStorage.getItem('famData') || '{}'); } catch(e2) { FAM = {}; }
   }
-  // localStorage fallback
-  try { FAM = JSON.parse(localStorage.getItem('famData') || '{}'); } catch(e) { FAM = {}; }
   if (!FAM['zamil']) seedRoot();
   renderCurrent();
+
+  // Real-time — أي تغيير يظهر فوراً
+  getSB()
+    .channel('members-changes')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'members' }, async () => {
+      const { data } = await getSB().from('members').select('id, data');
+      FAM = {};
+      for (const row of (data || [])) FAM[row.id] = row.data;
+      renderCurrent();
+    })
+    .subscribe();
 }
 
 function seedRoot() {
@@ -544,42 +556,18 @@ function seedRoot() {
 }
 
 async function saveData() {
-  const payload = { FAM };
-  if (USE_WORKER) {
-    try {
-      const r = await fetch(`${WORKER_URL}/data`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ data: payload, sha: dataSha })
-      });
-      if (r.ok) {
-        const j = await r.json();
-        dataSha = j.sha;
-        return;
-      }
-    } catch(e) {}
+  try {
+    const sb = getSB();
+    const rows = Object.values(FAM).map(m => ({ id: m.id, data: m }));
+    const { error } = await sb.from('members').upsert(rows, { onConflict: 'id' });
+    if (error) throw error;
+    localStorage.setItem('famData', JSON.stringify(FAM));
+  } catch(e) {
+    console.error('saveData error', e);
+    localStorage.setItem('famData', JSON.stringify(FAM));
   }
-  localStorage.setItem('famData', JSON.stringify(payload));
 }
 
-// polling — تحديث تلقائي كل 15 ثانية
-let lastSha = null;
-async function pollUpdates() {
-  if (!USE_WORKER) return;
-  try {
-    const r = await fetch(`${WORKER_URL}/data`);
-    if (r.ok) {
-      const j = await r.json();
-      if (j.sha && j.sha !== lastSha && j.sha !== dataSha) {
-        lastSha = j.sha;
-        FAM = j.data?.FAM || {};
-        dataSha = j.sha;
-        renderCurrent();
-      }
-    }
-  } catch(e) {}
-}
-setInterval(pollUpdates, 15000);
 
 // =============================================
 // STATE
@@ -1243,18 +1231,18 @@ async function confirmCrop() {
 
   const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
 
-  // حاول رفع للـ worker
-  if (USE_WORKER && editingId) {
+  // رفع الصورة على Supabase Storage
+  if (editingId) {
     try {
-      const base64 = dataUrl.split(',')[1];
-      const r = await fetch(`${WORKER_URL}/photo`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: editingId, base64, ext: 'jpg' })
+      const sb = getSB();
+      const blob = await (await fetch(dataUrl)).blob();
+      const path = `${editingId}.jpg`;
+      const { error } = await sb.storage.from('photos').upload(path, blob, {
+        contentType: 'image/jpeg', upsert: true
       });
-      if (r.ok) {
-        const j = await r.json();
-        FAM[editingId].photo = j.url;
+      if (!error) {
+        const { data: { publicUrl } } = sb.storage.from('photos').getPublicUrl(path);
+        FAM[editingId].photo = publicUrl + '?t=' + Date.now();
         await saveData();
         closeCrop();
         openPanel(editingId);
@@ -1262,7 +1250,7 @@ async function confirmCrop() {
         showToast('✓ تم رفع الصورة');
         return;
       }
-    } catch(e) {}
+    } catch(e) { console.error('photo upload error', e); }
   }
 
   // fallback: base64 مباشر
