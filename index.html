@@ -285,6 +285,16 @@ textarea.form-input{resize:vertical;min-height:52px}
       <div id="info-nasab-display" style="font-size:.78rem;color:var(--gold);font-weight:600;padding:4px 0;opacity:.85"></div>
     </div>
     <div class="info-field-row">
+      <label class="info-field-label">اسم الزوج/ة <span style="font-size:.6rem;opacity:.6">(يظهر جانبك في الشجرة)</span></label>
+      <div style="display:flex;gap:6px">
+        <input id="edit-spouse-name" class="info-field-input" type="text" placeholder="اتركه فارغاً إذا أعزب" style="flex:1">
+        <select id="edit-spouse-sex" class="info-field-input" style="width:72px;flex-shrink:0">
+          <option value="f">أنثى</option>
+          <option value="m">ذكر</option>
+        </select>
+      </div>
+    </div>
+    <div class="info-field-row">
       <label class="info-field-label">النبذة / السيرة</label>
       <textarea id="edit-bio" class="info-field-input" placeholder="نبذة مختصرة..."></textarea>
     </div>
@@ -705,7 +715,9 @@ function expandNode(id){
   kids.forEach(kid=>createNode(kid));placeNodes(kids,id);
   setTimeout(()=>{
     kids.forEach(kid=>drawLine(id,kid,FAM[kid]?.role==='wife'));
-    showSpouseFor(id); /* الزوجة الخارجية جانبه */
+    showSpouseFor(id); /* زوجة الأب جانبه */
+    /* زوجات الأبناء المرئيين */
+    kids.forEach(kid=>{ if(FAM[kid]?.spouse) showSpouseFor(kid); });
   },150);
   backBtn.classList.remove('hidden');
 }
@@ -792,6 +804,9 @@ function openInfoPanel(id){
   /* الاسم على البطاقة: إما short صريح أو أول كلمة من الاسم */
   document.getElementById('edit-short').value=m.short||shortName(m.name,null)||'';
   document.getElementById('edit-name').value=m.name||'';
+  /* الزوج/ة */
+  document.getElementById('edit-spouse-name').value=m.spouse?.name||'';
+  document.getElementById('edit-spouse-sex').value=m.spouse?.sex||'f';
   document.getElementById('edit-bio').value=m.bio||'';
   document.getElementById('edit-birth').value=m.birth||'';
   document.getElementById('edit-death').value=m.death||'';
@@ -970,11 +985,23 @@ function saveEdit(){
   FAM[editingId].short=shortVal;
   FAM[editingId].name=fullName||shortVal;
   FAM[editingId].bio=bio;
+  /* الزوج/ة */
+  const spouseName=document.getElementById('edit-spouse-name').value.trim();
+  const spouseSex=document.getElementById('edit-spouse-sex').value;
+  if(spouseName){ FAM[editingId].spouse={name:spouseName,sex:spouseSex}; }
+  else { delete FAM[editingId].spouse; }
   /* التواريخ */
   if(birth) FAM[editingId].birth=birth; else delete FAM[editingId].birth;
   if(death) FAM[editingId].death=death; else delete FAM[editingId].death;
   if(pendingPhoto)FAM[editingId].photo=pendingPhoto;
-  saveData();refreshUI(editingId);closeInfo();showToast('✓ تم حفظ التعديل');
+  saveData();refreshUI(editingId);
+  /* إعادة رسم الزوجة إذا كانت تغيرت */
+  clearSpouses();
+  const curId=history[history.length-1];
+  if(curId) showSpouseFor(curId);
+  /* زوجات الأبناء */
+  if(FAM[curId]?.children) FAM[curId].children.forEach(k=>{if(FAM[k]?.spouse)showSpouseFor(k);});
+  closeInfo();showToast('✓ تم حفظ التعديل');
 }
 
 /* ── إضافة مولود من نافذة المعلومات ── */
