@@ -855,6 +855,9 @@ function markFocus(id,backId=id){
 }
 
 function hideAll(){
+  /* كل ما تفتح شخص جديد: ارجع لأعلى الشاشة */
+  try{stage.scrollTo({top:0,left:0,behavior:'smooth'});}catch(e){stage.scrollTop=0;}
+  try{window.scrollTo({top:0,behavior:'smooth'});}catch(e){}
   Object.values(nodeEls).forEach(el=>{el.classList.remove('visible');el.classList.add('hidden')});
   lineEls.forEach(l=>l.remove());lineEls=[];
   clearSpouses();
