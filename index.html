@@ -114,7 +114,7 @@ body{font-family:var(--ffb);background:var(--bg);color:var(--fg);display:flex;fl
 .node-back-hint svg{width:12px;height:12px;fill:none;stroke:var(--sepia);stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
 /* back-btn removed — back arrow is on the node itself */
 /* ── نافذة ⓘ المنبثقة (تعرض + تعديل) ── */
-.info-popup{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--card);border:1.5px solid var(--gold);border-radius:16px;padding:0;min-width:300px;max-width:520px;width:96vw;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 8px 28px rgba(0,0,0,.22);font-family:var(--ffb);z-index:200;transition:opacity .2s;overflow:hidden;direction:rtl}
+.info-popup{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--card);border:1.5px solid var(--gold);border-radius:16px;padding:0;min-width:300px;max-width:520px;width:96vw;height:min(90vh,640px);display:flex;flex-direction:column;box-shadow:0 8px 28px rgba(0,0,0,.22);font-family:var(--ffb);z-index:200;transition:opacity .2s;overflow:hidden;direction:rtl}
 .info-popup.hidden{opacity:0;pointer-events:none}
 .info-av-row{display:flex;align-items:center;gap:10px;padding:10px 14px 8px;border-bottom:1px solid var(--border);flex-shrink:0}
 .info-av-wrap{position:relative;flex-shrink:0}
@@ -132,7 +132,7 @@ body{font-family:var(--ffb);background:var(--bg);color:var(--fg);display:flex;fl
 /* زر الإغلاق داخل النافذة */
 .info-close-x{width:28px;height:28px;border-radius:50%;background:color-mix(in srgb,var(--sepia) 12%,transparent);border:none;font-size:.85rem;color:var(--sepia);opacity:.7;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:var(--ffb);line-height:1;flex-shrink:0}
 /* حقول التعديل داخل النافذة */
-.info-fields{padding:10px 14px;overflow-y:auto;flex:1}
+.info-fields{padding:10px 14px;overflow-y:auto;flex:1;min-height:0}
 .sex-btn{flex:1;padding:6px 0;border-radius:8px;border:2px solid transparent;font-size:.78rem;font-family:var(--ffb);font-weight:700;cursor:pointer;transition:all .15s;opacity:.6;background:color-mix(in srgb,var(--sepia) 8%,transparent);color:var(--sepia)}
 .sex-btn-m.selected{background:color-mix(in srgb,var(--blue) 25%,transparent);border-color:var(--blue);color:var(--blue);opacity:1}
 .sex-btn-f.selected{background:color-mix(in srgb,var(--rose) 25%,transparent);border-color:var(--rose);color:var(--rose);opacity:1}
@@ -292,33 +292,28 @@ textarea.form-input{resize:vertical;min-height:52px}
         <input id="edit-name" class="info-field-input" type="text" placeholder="فلان بن فلان بن فلان">
       </div>
     </div>
-    <!-- صف: النسب + الترتيب (مخفي للزوجة) -->
-    <div id="row-nasab-order" style="display:flex;gap:8px">
-      <div class="info-field-row" style="flex:1">
-        <label class="info-field-label">النسب</label>
-        <input id="edit-nasab" class="info-field-input" type="text" placeholder="">
-      </div>
+    <!-- صف: نوع العلاقة + لمن + الترتيب (يحل محل النسب) -->
+    <div id="row-nasab-order" style="display:flex;gap:6px;align-items:flex-end">
       <div class="info-field-row" style="width:90px;flex-shrink:0">
-        <label class="info-field-label">الترتيب</label>
-        <input id="edit-order" class="info-field-input" type="number" min="1" placeholder="١" style="text-align:center">
-      </div>
-    </div>
-    <!-- نوع العلاقة -->
-    <div id="row-reltype" style="display:flex;gap:8px;align-items:flex-end">
-      <div class="info-field-row" style="flex:1">
-        <label class="info-field-label">نوع العلاقة</label>
-        <select id="edit-reltype" class="info-field-input" onchange="onRelTypeChange()" style="cursor:pointer">
+        <label class="info-field-label">نوع</label>
+        <select id="edit-reltype" class="info-field-input" onchange="onRelTypeChange()" style="cursor:pointer;padding-right:4px">
           <option value="son">ابن</option>
           <option value="daughter">ابنة</option>
           <option value="husband">زوج</option>
           <option value="wife">زوجة</option>
         </select>
       </div>
-      <div id="row-relof" class="info-field-row" style="flex:1;display:none">
+      <div class="info-field-row" style="flex:1">
         <label class="info-field-label">لمن؟</label>
         <input id="edit-relof" class="info-field-input" type="text" placeholder="اسم الأب / الأم">
       </div>
+      <div class="info-field-row" style="width:72px;flex-shrink:0">
+        <label class="info-field-label">الترتيب</label>
+        <input id="edit-order" class="info-field-input" type="number" min="1" placeholder="١" style="text-align:center">
+      </div>
     </div>
+    <!-- النسب المخفي (للحفظ فقط) -->
+    <input type="hidden" id="edit-nasab">
     <!-- النبذة (مخفي للزوجة) -->
     <div id="row-bio" class="info-field-row">
       <label class="info-field-label">النبذة / السيرة</label>
@@ -330,11 +325,6 @@ textarea.form-input{resize:vertical;min-height:52px}
       <button id="rada-toggle" onclick="toggleRada()" style="display:flex;align-items:center;gap:7px;padding:5px 12px;border-radius:20px;border:2px solid var(--border);background:transparent;cursor:pointer;font-family:var(--ffb);font-size:.75rem;color:var(--sepia);transition:all .15s">
         <span id="rada-ring-preview" style="width:16px;height:16px;border-radius:50%;border:2.5px solid var(--blue);flex-shrink:0;display:inline-block"></span>
         <span id="rada-label">لا</span>
-      </button>
-      <label class="info-field-label" style="margin:0;flex-shrink:0">الجنس</label>
-      <button id="sex-toggle" onclick="toggleSex()" style="display:flex;align-items:center;gap:7px;padding:5px 12px;border-radius:20px;border:2px solid var(--border);background:transparent;cursor:pointer;font-family:var(--ffb);font-size:.75rem;color:var(--sepia);transition:all .15s">
-        <span id="sex-ring-preview" style="width:16px;height:16px;border-radius:50%;border:2.5px solid var(--blue);flex-shrink:0;display:inline-block"></span>
-        <span id="sex-label">ذكر</span>
       </button>
     </div>
     <!-- صف: الميلاد + العمر + الوفاة -->
@@ -849,8 +839,6 @@ function openInfoPanel(id){
   selectedSpouseSex=null; selectedChildSex=null;
   editingRada=!!(m.rada);
   editingSex=m.sex||'m';
-  updateRadaUI();
-  updateSexUI();
   /* نوع العلاقة */
   const reltypeEl=document.getElementById('edit-reltype');
   if(reltypeEl){
@@ -858,8 +846,15 @@ function openInfoPanel(id){
     reltypeEl.value=m.relType||def;
   }
   const relofEl=document.getElementById('edit-relof');
-  if(relofEl) relofEl.value=m.relOf||'';
-  onRelTypeChange();
+  if(relofEl){
+    if(m.relOf){
+      relofEl.value=m.relOf;
+    } else {
+      const parId=m.par;
+      relofEl.value=(parId&&FAM[parId])?(FAM[parId].short||FAM[parId].name||''):'';
+    }
+  }
+  onRelTypeChange(); /* يعدّل editingSex ويحدث updateRadaUI */
   const deleteBtn=document.getElementById('delete-btn');
   if(deleteBtn) deleteBtn.style.display=(m.role==='root'?'none':'');
 
@@ -867,7 +862,10 @@ function openInfoPanel(id){
   const isWife=(m.role==='wife');
   ['row-nasab-order','row-bio','row-rada','add-child-section','row-fullname'].forEach(rid=>{
     const el=document.getElementById(rid);
-    if(el) el.style.display=isWife?'none':(rid==='row-nasab-order'?'flex':rid==='row-rada'?'flex':'');
+    if(!el)return;
+    if(isWife) el.style.display='none';
+    else if(rid==='row-nasab-order'||rid==='row-rada') el.style.display='flex';
+    else el.style.display='';
   });
   ['spouse-btn-m','spouse-btn-f','child-btn-m','child-btn-f'].forEach(id=>{document.getElementById(id)?.classList.remove('selected')});
   const p=document.getElementById('info-popup');
@@ -1086,16 +1084,15 @@ function updateSexUI(){
 }
 function onRelTypeChange(){
   const v=document.getElementById('edit-reltype')?.value;
-  const isSpouse=(v==='husband'||v==='wife');
-  const relOfRow=document.getElementById('row-relof');
-  if(relOfRow) relOfRow.style.display=isSpouse?'':'none';
-  if(isSpouse){
-    /* اقتراح تلقائي: اسم الأب/الأم */
-    const parId=FAM[editingId]?.par;
-    const relOfEl=document.getElementById('edit-relof');
-    if(relOfEl&&!relOfEl.value&&parId&&FAM[parId]){
-      relOfEl.value=FAM[parId].short||FAM[parId].name||'';
-    }
+  /* جنس تلقائي من نوع العلاقة */
+  if(v==='son'||v==='husband') editingSex='m';
+  else if(v==='daughter'||v==='wife') editingSex='f';
+  updateRadaUI();
+  /* لمن: اقتراح تلقائي لأول مرة */
+  const parId=FAM[editingId]?.par;
+  const relOfEl=document.getElementById('edit-relof');
+  if(relOfEl&&!relOfEl.value&&parId&&FAM[parId]){
+    relOfEl.value=FAM[parId].short||FAM[parId].name||'';
   }
 }
 function updateRadaUI(){
@@ -1254,7 +1251,7 @@ function saveEdit(){
   if(death) FAM[editingId].death=death; else delete FAM[editingId].death;
   if(pendingPhoto)FAM[editingId].photo=pendingPhoto;
   if(editingRada) FAM[editingId].rada=true; else delete FAM[editingId].rada;
-  /* جنس وعلاقة */
+  /* جنس من relType */
   FAM[editingId].sex=editingSex;
   const reltypeVal=document.getElementById('edit-reltype')?.value;
   if(reltypeVal) FAM[editingId].relType=reltypeVal;
