@@ -38,7 +38,8 @@ body{font-family:var(--ffb);background:var(--bg);color:var(--fg);display:flex;fl
 .nasab-label{font-family:var(--ffb);font-size:.6rem;color:var(--gold);font-weight:600}
 .nasab-arrow{font-size:.55rem;color:var(--gold);transition:transform .25s}
 .nasab-arrow.open{transform:rotate(180deg)}
-.hdr-nasab{font-family:var(--ff);font-size:.62rem;color:var(--sepia);opacity:.7;line-height:2;margin-top:5px;padding:6px 10px;background:color-mix(in srgb,var(--gold) 8%,transparent);border-radius:8px;border:1px solid color-mix(in srgb,var(--gold) 20%,transparent)}
+.hdr-nasab{font-family:var(--ff);font-size:.62rem;color:var(--sepia);opacity:.7;line-height:2;margin-top:5px;padding:6px 10px;background:color-mix(in srgb,var(--gold) 8%,transparent);border-radius:8px;border:1px solid color-mix(in srgb,var(--gold) 20%,transparent);
+  word-break:break-word;white-space:normal;overflow-wrap:break-word;text-align:center;max-width:100%;box-sizing:border-box}
 
 .tabs-bar{background:var(--sand-mid);border-bottom:2px solid var(--gold);flex-shrink:0;
   display:flex;overflow-x:auto;scrollbar-width:none}
@@ -109,9 +110,7 @@ body{font-family:var(--ffb);background:var(--bg);color:var(--fg);display:flex;fl
 .node-back-hint{position:absolute;top:-3px;left:-5px;width:20px;height:20px;border-radius:50%;background:color-mix(in srgb,var(--sepia) 20%,transparent);border:none;cursor:pointer;display:none;align-items:center;justify-content:center;box-shadow:0 1px 4px rgba(0,0,0,.12)}
 .node:hover .node-back-hint{display:flex}
 .node-back-hint svg{width:12px;height:12px;fill:none;stroke:var(--sepia);stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
-.back-btn{position:fixed;bottom:20px;left:16px;background:var(--gold);color:#fff;border:none;border-radius:50%;width:44px;height:44px;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 3px 14px rgba(0,0,0,.25);transition:opacity .3s,transform .3s;z-index:100}
-.back-btn.hidden{opacity:0;pointer-events:none;transform:translateY(8px)}
-.back-btn svg{width:22px;height:22px;fill:none;stroke:#fff;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
+/* back-btn removed — back arrow is on the node itself */
 /* ── نافذة ⓘ المنبثقة (تعرض + تعديل) ── */
 .info-popup{position:fixed;bottom:60px;left:50%;transform:translateX(-50%);background:var(--card);border:1.5px solid var(--gold);border-radius:16px;padding:0;min-width:240px;max-width:290px;box-shadow:0 8px 28px rgba(0,0,0,.22);font-family:var(--ffb);z-index:200;transition:opacity .2s;overflow:hidden;direction:rtl}
 .info-popup.hidden{opacity:0;pointer-events:none}
@@ -259,10 +258,6 @@ textarea.form-input{resize:vertical;min-height:52px}
   </div>
 </div>
 
-<button class="back-btn hidden" id="back-btn" onclick="goBack()">
-  <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
-</button>
-
 <!-- نافذة ⓘ المنبثقة (تعرض + تعديل مدمج) -->
 <div class="info-popup hidden" id="info-popup">
   <button class="info-close-x" onclick="closeInfo()">✕</button>
@@ -308,6 +303,41 @@ textarea.form-input{resize:vertical;min-height:52px}
       </div>
     </div>
   </div>
+  <!-- قسم إضافة مولود -->
+  <div id="add-child-section" style="border-top:1px solid var(--border);margin:0 14px 10px;padding-top:10px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+      <span style="font-size:.7rem;font-weight:700;color:var(--sepia);opacity:.7">إضافة مولود</span>
+      <button onclick="toggleAddChild()" id="add-child-toggle"
+        style="background:color-mix(in srgb,var(--gold) 15%,transparent);border:1px solid color-mix(in srgb,var(--gold) 40%,transparent);
+               border-radius:6px;padding:3px 10px;font-size:.72rem;font-family:var(--ffb);color:var(--sepia);cursor:pointer">
+        ＋ مولود جديد
+      </button>
+    </div>
+    <div id="add-child-form" style="display:none;background:color-mix(in srgb,var(--gold) 7%,transparent);border-radius:8px;padding:8px 10px">
+      <div class="info-field-row">
+        <label class="info-field-label">الاسم الكامل</label>
+        <input id="new-child-name" class="info-field-input" type="text" placeholder="مثال: محمد عبدالحميد">
+      </div>
+      <div class="info-field-row" style="display:flex;gap:8px">
+        <div style="flex:1">
+          <label class="info-field-label">الجنس</label>
+          <select id="new-child-sex" class="info-field-input">
+            <option value="m">ذكر</option>
+            <option value="f">أنثى</option>
+          </select>
+        </div>
+        <div style="flex:1">
+          <label class="info-field-label">تاريخ الميلاد</label>
+          <input id="new-child-birth" class="info-field-input" type="text" placeholder="اختياري">
+        </div>
+      </div>
+      <div style="display:flex;gap:6px;justify-content:flex-end;margin-top:6px">
+        <button onclick="cancelAddChild()" style="padding:4px 10px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--sepia);font-family:var(--ffb);font-size:.75rem;cursor:pointer;opacity:.7">إلغاء</button>
+        <button onclick="confirmAddChild()" style="padding:4px 12px;border-radius:6px;border:none;background:var(--green);color:#fff;font-family:var(--ffb);font-size:.75rem;font-weight:700;cursor:pointer">✓ إضافة</button>
+      </div>
+    </div>
+  </div>
+
   <div class="info-save-row">
     <button class="info-cancel-btn" onclick="closeInfo()">إلغاء</button>
     <button class="info-save-btn" onclick="saveEdit()">💾 حفظ</button>
@@ -444,8 +474,6 @@ function switchTab(t){
   document.querySelectorAll('.tab-btn').forEach((b,i)=>{b.classList.toggle('active',['drill','full','profiles'][i]===t)});
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
   document.getElementById('panel-'+t).classList.add('active');
-  const bb=document.getElementById('back-btn');
-  bb.style.display=(t==='drill')?'':'none';
   if(t==='full')buildFullTree();
   if(t==='profiles')buildProfiles();
 }
@@ -454,7 +482,7 @@ function switchTab(t){
 const canvas=document.getElementById('canvas');
 const linesSVG=document.getElementById('lines-svg');
 const stage=document.getElementById('stage');
-const backBtn=document.getElementById('back-btn');
+const backBtn={classList:{add:()=>{},remove:()=>{}}}; /* removed floating back btn */
 let history=[];
 let nodeEls={};
 let lineEls=[];
@@ -540,38 +568,71 @@ function placeNodes(ids,parentId){
   ids.forEach((id,i)=>{
     const el=nodeEls[id]||createNode(id);
     let x,y;
+    const parEl=nodeEls[parentId];
+    let parY=h*0.17;
+    if(parEl) parY=parseFloat(parEl.style.top)||h*0.17;
+
     if(!parentId){x=w/2;y=h/2;}
-    else if(mobile && n>3){
-      /* جوال: عمودان متناوبان مع هامش آمن */
-      const col=i%2;
-      const row=Math.floor(i/2);
-      const parEl=nodeEls[parentId];let parY=h*0.17;
-      if(parEl){const pr=parEl.getBoundingClientRect(),sr=stage.getBoundingClientRect();parY=pr.top+pr.height/2-sr.top}
-      /* مسافة بين العمودين = 42% من عرض الشاشة، محدودة بالهامش */
-      const colOffset=Math.min(w*0.22, w/2-SIDE_PAD);
-      x=col===0?w/2+colOffset:w/2-colOffset;
-      y=parY+130+row*105;
+    else if(mobile || n>6){
+      /* جوال أو عدد كبير: عمودان */
+      const cols=Math.min(2, n<=3?n:2);
+      const col=i%cols;
+      const row=Math.floor(i/cols);
+      const colGap=Math.min(w*0.28, w/2-SIDE_PAD);
+      const startX=cols===1?w/2:w/2-(colGap*(cols-1)/2);
+      x=startX+col*colGap;
+      y=parY+140+row*110;
     } else {
-      /* أفقي: نوزع مع هامش آمن من الجدران */
+      /* أفقي: توزيع متساوٍ مع هامش آمن من الجدران */
       const usable=w-2*SIDE_PAD;
-      const totalSpan=Math.min(n*95,usable);
-      const spacing=n>1?totalSpan/(n-1):0;
-      x=n===1?w/2:(SIDE_PAD+totalSpan/2 - totalSpan/2)+SIDE_PAD+i*spacing;
-      /* إذا عقدة واحدة أو عدد قليل — تمركز صحيح */
+      const itemGap=Math.min(100, usable/(n>1?n-1:1));
+      const totalSpan=(n-1)*itemGap;
       if(n===1) x=w/2;
-      else x=SIDE_PAD+(usable-totalSpan)/2+i*spacing;
-      const parEl=nodeEls[parentId];let parY=h*0.2;
-      if(parEl){const pr=parEl.getBoundingClientRect(),sr=stage.getBoundingClientRect();parY=pr.top+pr.height/2-sr.top}
-      y=parY+160;if(y>h*0.82)y=parY-160;
+      else x=SIDE_PAD+(usable-totalSpan)/2+i*itemGap;
+      y=parY+160;
     }
+
+    /* تأكد X ضمن حدود الكانفاس */
+    x=Math.max(SIDE_PAD, Math.min(w-SIDE_PAD, x));
+
     el.style.left=x+'px';el.style.top=y+'px';
     setTimeout(()=>{
       el.classList.remove('hidden');el.classList.add('visible');
-      const needed=y+130;
+      const needed=y+150;
       if(parseInt(canvas.style.height||0)<needed)canvas.style.height=needed+'px';
     },20+i*25);
   });
 }
+
+/* ── إعادة رسم عند تغيير حجم النافذة ── */
+let resizeTimer=null;
+window.addEventListener('resize',()=>{
+  clearTimeout(resizeTimer);
+  resizeTimer=setTimeout(()=>{
+    if(activeTab!=='drill')return;
+    if(!history.length){showRoot();return;}
+    /* أعد رسم آخر حالة */
+    const cur=history[history.length-1];
+    const prevHist=[...history];
+    hideAll();
+    history=prevHist;
+    const {w,h}=getSize();
+    createNode(cur);
+    nodeEls[cur].style.left=w/2+'px';nodeEls[cur].style.top=h*0.17+'px';
+    nodeEls[cur].classList.remove('hidden');nodeEls[cur].classList.add('visible');
+    const kids=FAM[cur].children||[];
+    if(kids.length){
+      kids.forEach(k=>createNode(k));
+      placeNodes(kids,cur);
+      setTimeout(()=>{
+        kids.forEach(k=>drawLine(cur,k,FAM[k]?.role==='wife'));
+        showSpouseFor(cur);
+      },150);
+    } else {
+      setTimeout(()=>showSpouseFor(cur),200);
+    }
+  },200);
+});
 
 /* ── الزوج/الزوجة الخارجية ── */
 let spouseEls=[];
@@ -917,6 +978,45 @@ function saveEdit(){
   if(pendingPhoto)FAM[editingId].photo=pendingPhoto;
   saveData();refreshUI(editingId);closeInfo();showToast('✓ تم حفظ التعديل');
 }
+
+/* ── إضافة مولود من نافذة المعلومات ── */
+function toggleAddChild(){
+  const form=document.getElementById('add-child-form');
+  const show=form.style.display==='none';
+  form.style.display=show?'block':'none';
+  if(show){document.getElementById('new-child-name').focus();}
+}
+function cancelAddChild(){
+  document.getElementById('add-child-form').style.display='none';
+  document.getElementById('new-child-name').value='';
+  document.getElementById('new-child-birth').value='';
+}
+function confirmAddChild(){
+  const name=document.getElementById('new-child-name').value.trim();
+  if(!name){showToast('الرجاء إدخال اسم المولود');return;}
+  const sex=document.getElementById('new-child-sex').value;
+  const birth=document.getElementById('new-child-birth').value.trim();
+  /* توليد معرّف فريد */
+  let baseId=name.split(' ')[0].toLowerCase().replace(/[^a-z؀-ۿ]/g,'');
+  if(!baseId) baseId='child';
+  let newId=baseId;let n=2;while(FAM[newId])newId=baseId+'_'+n++;
+  /* إضافة للبيانات */
+  FAM[newId]={name,sex,par:editingId};
+  if(birth) FAM[newId].birth=birth;
+  if(!FAM[editingId].children) FAM[editingId].children=[];
+  FAM[editingId].children.push(newId);
+  saveData();
+  cancelAddChild();
+  showToast('✓ تمت إضافة '+name);
+  /* إذا كنا في عرض هذا الشخص، أعد الرسم */
+  if(history[history.length-1]===editingId){
+    const kids=FAM[editingId].children||[];
+    kids.forEach(k=>createNode(k));
+    placeNodes(kids,editingId);
+    setTimeout(()=>kids.forEach(k=>drawLine(editingId,k,FAM[k]?.role==='wife')),150);
+  }
+}
+
 function refreshUI(id){
   if(nodeEls[id]){
     const ring=nodeEls[id].querySelector('.avatar-ring');if(ring)ring.innerHTML=avatarHTML(id);
