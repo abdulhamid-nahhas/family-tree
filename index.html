@@ -82,10 +82,26 @@ body{font-family:var(--ffb);background:var(--bg);color:var(--fg);display:flex;fl
 .avatar-wrap.root-wrap{width:70px;height:70px}
 .avatar-ring img{width:100%;height:100%;object-fit:cover;border-radius:50%}
 .default-avatar{width:70%;height:70%;opacity:.6}
-/* لا نقطة خضراء — حذفت */
+/* 💍 أيقونة الزوجة (من زوجات زامل) */
+.wife-badge{position:absolute;top:-4px;right:-4px;font-size:13px;line-height:1;pointer-events:none;filter:drop-shadow(0 1px 2px rgba(0,0,0,.3))}
+/* الزوج/الزوجة الخارجية — تظهر جنب العقدة */
+.spouse-node{position:absolute;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:default;opacity:0;transition:opacity .3s .15s}
+.spouse-node.show{opacity:1}
+.spouse-ring{width:44px;height:44px;border-radius:50%;border:2px dashed var(--gold-lt);overflow:hidden;background:var(--sand-mid);display:flex;align-items:center;justify-content:center}
+.spouse-ring.f{border-color:var(--rose)}
+.spouse-ring.m{border-color:var(--blue)}
+.spouse-name{font-family:var(--ff);font-size:.62rem;font-weight:700;color:var(--sepia);text-align:center;max-width:70px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.spouse-label{font-size:.5rem;color:var(--gold);font-weight:600}
+/* خط أفقي متقطع يربط الشخص بزوجه */
+.spouse-line{position:absolute;pointer-events:none}
 .node-name{font-family:var(--ff);font-size:.8rem;font-weight:700;color:var(--sepia);text-align:center;background:var(--card);border:1px solid var(--border);border-radius:7px;padding:3px 9px;max-width:95px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;box-shadow:0 1px 4px rgba(0,0,0,.07)}
 .node.root .node-name{font-size:.92rem;max-width:115px}
 .node:hover .avatar-ring{box-shadow:0 0 0 3px color-mix(in srgb,var(--gold) 40%,transparent)}
+/* رقم ترتيب الولادة */
+.birth-order{position:absolute;top:-6px;left:50%;transform:translateX(-50%);
+  background:var(--sepia);color:var(--sand);font-family:var(--ffb);font-size:.5rem;
+  font-weight:700;line-height:1;padding:1px 5px;border-radius:5px;min-width:16px;
+  text-align:center;pointer-events:none;white-space:nowrap;opacity:.9;z-index:2}
 /* زر ⓘ على يمين الصورة */
 .node-info-btn{position:absolute;top:-3px;right:-5px;width:20px;height:20px;border-radius:50%;background:var(--gold);border:none;cursor:pointer;display:none;align-items:center;justify-content:center;box-shadow:0 1px 4px rgba(0,0,0,.2);font-size:11px;color:#fff;font-weight:700;line-height:1}
 .node:hover .node-info-btn{display:flex}
@@ -218,7 +234,7 @@ textarea.form-input{resize:vertical;min-height:52px}
   <div class="leg"><div class="leg-circle leg-f"></div>أنثى</div>
   <div class="leg"><div class="leg-circle leg-rada" style="border-color:var(--blue)"></div>رضاعة ذكر</div>
   <div class="leg"><div class="leg-circle leg-rada" style="border-color:var(--rose)"></div>رضاعة أنثى</div>
-  <div class="leg"><div style="width:22px;height:3px;background:var(--rose);border-radius:2px;opacity:.8;border-top:2px dashed var(--rose)"></div>زوجة</div>
+  <div class="leg"><div style="width:26px;height:0;border-top:2.5px dashed var(--rose);opacity:.85"></div>زوجة</div>
 </div>
 
 <!-- TAB 1 -->
@@ -294,28 +310,29 @@ let FAM = {
   abeer:{name:'عبير صولان',sex:'f',role:'wife',bio:'الزوجة الأولى',children:['abdulmalik','yousef','racan','umkalt','ahmed','abdulraouf','eilaf','rifal','abdulghani']},
   abdulmalik:{name:'عبدالملك',sex:'m',par:'abeer',children:[]},
   yousef:{name:'يوسف',sex:'m',par:'abeer',children:[]},
-  racan:{name:'راكان',sex:'m',par:'abeer',children:[]},
-  umkalt:{name:'أم كلثوم',sex:'f',par:'abeer',children:[]},
+  racan:{name:'راكان',sex:'m',par:'abeer',rada:true,bio:'رضاعة',children:[]},
+  umkalt:{name:'أم كلثوم',sex:'f',par:'abeer',rada:true,bio:'رضاعة',children:[]},
   ahmed:{name:'أحمد',sex:'m',par:'abeer',children:[]},
   abdulraouf:{name:'عبدالرؤوف',sex:'m',par:'abeer',children:[]},
   eilaf:{name:'إيلاف',sex:'f',par:'abeer',children:[]},
   rifal:{name:'ريفال',sex:'f',par:'abeer',children:[]},
   abdulghani:{name:'عبدالغني',sex:'m',par:'abeer',children:[]},
 
+
   /* ── زوجة 2: فائزة المنصوري ── */
   faiza:{name:'فائزة أحمد المنصوري',sex:'f',role:'wife',bio:'الزوجة الثانية',children:['abdulrahman','husam_f','abdulhamid','ahlam','abdulmajid','muhammad_f','hanan','layan']},
-  abdulrahman:{name:'عبدالرحمن',sex:'m',par:'faiza',children:['jamal','ibthal']},
+  abdulrahman:{name:'عبدالرحمن',sex:'m',par:'faiza',children:['jamal','ibthal'],spouse:{name:'زوجة عبدالرحمن',sex:'f'}},
   jamal:{name:'جمال',sex:'m',par:'abdulrahman',children:[]},
   ibthal:{name:'ابتهال',sex:'f',par:'abdulrahman',children:[]},
   husam_f:{name:'حسام',sex:'m',par:'faiza',rada:true,bio:'رضاعة',children:[]},
-  abdulhamid:{name:'عبدالحميد',sex:'m',par:'faiza',children:['hasan_ah','afnan']},
+  abdulhamid:{name:'عبدالحميد',sex:'m',par:'faiza',children:['hasan_ah','afnan'],spouse:{name:'زوجة عبدالحميد',sex:'f'}},
   hasan_ah:{name:'حسان',sex:'m',par:'abdulhamid',children:[]},
   afnan:{name:'أفنان',sex:'f',par:'abdulhamid',children:[]},
-  ahlam:{name:'أحلام',sex:'f',par:'faiza',children:['hamza','muath','maryam']},
+  ahlam:{name:'أحلام',sex:'f',par:'faiza',children:['hamza','muath','maryam'],spouse:{name:'زوج أحلام',sex:'m'}},
   hamza:{name:'حمزة',sex:'m',par:'ahlam',children:[]},
   muath:{name:'معاذ',sex:'m',par:'ahlam',children:[]},
   maryam:{name:'مريم',sex:'f',par:'ahlam',children:[]},
-  abdulmajid:{name:'عبدالمجيد',sex:'m',par:'faiza',children:['taghrid','saif','reem']},
+  abdulmajid:{name:'عبدالمجيد',sex:'m',par:'faiza',children:['taghrid','saif','reem'],spouse:{name:'زوجة عبدالمجيد',sex:'f'}},
   taghrid:{name:'تغريد',sex:'f',par:'abdulmajid',children:[]},
   saif:{name:'سيف',sex:'m',par:'abdulmajid',children:[]},
   reem:{name:'ريم',sex:'f',par:'abdulmajid',children:[]},
@@ -325,27 +342,27 @@ let FAM = {
 
   /* ── زوجة 3: ليلى فؤاد مفتي ── */
   layla:{name:'ليلى فؤاد مفتي',sex:'f',role:'wife',bio:'الزوجة الثالثة',children:['samia','abdulaziz','abdullah_l','basmah','samiya2','jamil_l','abdullatif','mahmoud','jawhar','abdulwahab','asmaa_l','abdulsalam','umar_l','aishah_l','jawhar2_l','fuad_l']},
-  samia:{name:'سمية',sex:'f',par:'layla',children:['bara','leen','lujayn','alfdaa']},
+  samia:{name:'سمية',sex:'f',par:'layla',children:['bara','leen','lujayn','alfdaa'],spouse:{name:'زوج سمية',sex:'m'}},
   bara:{name:'البراء',sex:'m',par:'samia',children:[]},
   leen:{name:'لين',sex:'f',par:'samia',children:[]},
   lujayn:{name:'لجين',sex:'f',par:'samia',children:[]},
   alfdaa:{name:'الفداء',sex:'f',par:'samia',children:[]},
-  abdulaziz:{name:'عبدالعزيز',sex:'m',par:'layla',children:['husam_e','arij','arjwan','adham_e']},
+  abdulaziz:{name:'عبدالعزيز',sex:'m',par:'layla',children:['husam_e','arij','arjwan','adham_e'],spouse:{name:'زوجة عبدالعزيز',sex:'f'}},
   husam_e:{name:'حسام',sex:'m',par:'abdulaziz',children:[]},
   arij:{name:'أريج',sex:'f',par:'abdulaziz',children:[]},
   arjwan:{name:'أرجوان',sex:'f',par:'abdulaziz',children:[]},
   adham_e:{name:'أدهم',sex:'m',par:'abdulaziz',children:[]},
-  abdullah_l:{name:'عبدالله',sex:'m',par:'layla',children:['bilal','layla2','lamar']},
+  abdullah_l:{name:'عبدالله',sex:'m',par:'layla',children:['bilal','layla2','lamar'],spouse:{name:'زوجة عبدالله',sex:'f'}},
   bilal:{name:'بلال',sex:'m',par:'abdullah_l',children:[]},
   layla2:{name:'ليلى',sex:'f',par:'abdullah_l',children:[]},
   lamar:{name:'لمار',sex:'f',par:'abdullah_l',children:[]},
-  basmah:{name:'بسمة',sex:'f',par:'layla',children:['muhammad_b','jawad']},
+  basmah:{name:'بسمة',sex:'f',par:'layla',children:['muhammad_b','jawad'],spouse:{name:'زوج بسمة',sex:'m'}},
   muhammad_b:{name:'محمد',sex:'m',par:'basmah',children:[]},
   jawad:{name:'جواد',sex:'m',par:'basmah',children:[]},
   samiya2:{name:'سامية',sex:'f',par:'layla',children:[]},
-  jamil_l:{name:'جميل',sex:'m',par:'layla',children:['ghaith']},
+  jamil_l:{name:'جميل',sex:'m',par:'layla',children:['ghaith'],spouse:{name:'زوجة جميل',sex:'f'}},
   ghaith:{name:'غيث',sex:'m',par:'jamil_l',children:[]},
-  abdullatif:{name:'عبداللطيف',sex:'m',par:'layla',children:['rayan','rayan2']},
+  abdullatif:{name:'عبداللطيف',sex:'m',par:'layla',children:['rayan','rayan2'],spouse:{name:'زوجة عبداللطيف',sex:'f'}},
   rayan:{name:'ريان',sex:'m',par:'abdullatif',children:[]},
   rayan2:{name:'ريان',sex:'m',par:'abdullatif',children:[]},
   mahmoud:{name:'محمود',sex:'m',par:'layla',children:[]},
@@ -374,8 +391,34 @@ function toggleNasab(){
 }
 
 function avatarSVG(sex){
-  if(sex==='m')return`<svg class="default-avatar" viewBox="0 0 40 40" fill="none"><circle cx="20" cy="14" r="8" fill="#6A8FAF" opacity=".7"/><ellipse cx="20" cy="34" rx="13" ry="8" fill="#6A8FAF" opacity=".4"/><circle cx="20" cy="14" r="6" fill="#c8daea"/><ellipse cx="20" cy="12" rx="4" ry="3" fill="#6A8FAF" opacity=".5"/></svg>`;
-  return`<svg class="default-avatar" viewBox="0 0 40 40" fill="none"><circle cx="20" cy="13" r="8" fill="#C5796A" opacity=".7"/><path d="M8 36 Q10 26 20 25 Q30 26 32 36" fill="#C5796A" opacity=".4"/><circle cx="20" cy="13" r="6" fill="#f5d5cf"/><path d="M15 10 Q20 6 25 10" stroke="#C5796A" stroke-width="1.5" fill="none" opacity=".6"/></svg>`;
+  if(sex==='m')return`<svg class="default-avatar" viewBox="0 0 40 40" fill="none">
+    <!-- جسم/كتفان -->
+    <ellipse cx="20" cy="34" rx="12" ry="7" fill="#6A8FAF" opacity=".35"/>
+    <!-- وجه -->
+    <circle cx="20" cy="15" r="8" fill="#c8daea"/>
+    <!-- شعر قصير ذكوري -->
+    <path d="M12 14 Q12 6 20 6 Q28 6 28 14" fill="#6A8FAF" opacity=".75"/>
+    <rect x="12" y="12" width="16" height="3" rx="1.5" fill="#6A8FAF" opacity=".55"/>
+    <!-- ملامح وجه بسيطة -->
+    <circle cx="17" cy="15" r="1.2" fill="#4a6a8f" opacity=".5"/>
+    <circle cx="23" cy="15" r="1.2" fill="#4a6a8f" opacity=".5"/>
+    <path d="M17 19 Q20 21 23 19" stroke="#8aA0b0" stroke-width="1" fill="none" opacity=".5"/>
+  </svg>`;
+  return`<svg class="default-avatar" viewBox="0 0 40 40" fill="none">
+    <!-- جسم -->
+    <ellipse cx="20" cy="35" rx="12" ry="6" fill="#C5796A" opacity=".3"/>
+    <!-- وجه -->
+    <circle cx="20" cy="14" r="8" fill="#f5d5cf"/>
+    <!-- شعر طويل أنثوي -->
+    <path d="M12 10 Q11 4 20 4 Q29 4 28 10" fill="#C5796A" opacity=".8"/>
+    <!-- شعر جانبي طويل يتدلى -->
+    <path d="M12 10 Q9 16 10 24 Q11 28 13 29" stroke="#C5796A" stroke-width="3" fill="none" opacity=".65" stroke-linecap="round"/>
+    <path d="M28 10 Q31 16 30 24 Q29 28 27 29" stroke="#C5796A" stroke-width="3" fill="none" opacity=".65" stroke-linecap="round"/>
+    <!-- ملامح -->
+    <circle cx="17" cy="14" r="1.1" fill="#a05060" opacity=".5"/>
+    <circle cx="23" cy="14" r="1.1" fill="#a05060" opacity=".5"/>
+    <path d="M17.5 18.5 Q20 20.5 22.5 18.5" stroke="#C57080" stroke-width="1" fill="none" opacity=".5"/>
+  </svg>`;
 }
 function avatarHTML(id){const m=FAM[id];if(m.photo)return`<img src="${m.photo}" alt="${m.name}">`;return avatarSVG(m.sex)}
 
@@ -437,6 +480,11 @@ function createNode(id){
   const ring=document.createElement('div');
   ring.className='avatar-ring'+(m.sex==='f'?' female':'')+(m.rada?' rada':'')+(isRoot?' root':'');
   ring.innerHTML=avatarHTML(id);
+  /* 💍 بادج الزوجة (زوجات زامل الرسميات) */
+  if(m.role==='wife'){
+    const badge=document.createElement('span');badge.className='wife-badge';badge.textContent='💍';
+    awrap.appendChild(badge);
+  }
   /* زر ⓘ على اليمين */
   const infoBtn=document.createElement('button');
   infoBtn.className='node-info-btn';infoBtn.title='معلومات وتعديل';
@@ -447,6 +495,17 @@ function createNode(id){
   backHint.className='node-back-hint';backHint.title='رجوع';
   backHint.innerHTML='<svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>';
   backHint.onclick=e=>{e.stopPropagation();goBack()};
+  /* رقم ترتيب الولادة */
+  if(m.par && FAM[m.par]){
+    const siblings=FAM[m.par].children||[];
+    const nonRada=siblings.filter(s=>!FAM[s]?.rada);
+    const idx=nonRada.indexOf(id);
+    if(idx>=0 && !m.rada){
+      const ob=document.createElement('span');ob.className='birth-order';
+      ob.textContent='#'+(idx+1);
+      awrap.appendChild(ob);
+    }
+  }
   awrap.appendChild(ring);awrap.appendChild(infoBtn);awrap.appendChild(backHint);
   /* اسم واحد فقط */
   const lbl=document.createElement('div');lbl.className='node-name';lbl.textContent=shortName(m.name);
@@ -497,16 +556,65 @@ function placeNodes(ids,parentId){
   });
 }
 
+/* ── الزوج/الزوجة الخارجية ── */
+let spouseEls=[];
+function clearSpouses(){spouseEls.forEach(e=>e.remove());spouseEls=[]}
+
+/* يُظهر الزوجة الخارجية جانب العقدة المحددة عبر SVG على canvas */
+function showSpouseFor(id){
+  const m=FAM[id];if(!m.spouse)return;
+  const nodeEl=nodeEls[id];if(!nodeEl)return;
+  const sp=m.spouse;
+  const nx=parseFloat(nodeEl.style.left);
+  const ny=parseFloat(nodeEl.style.top);
+  const OFFSET=90; /* مسافة الزوجة عن الشخص */
+
+  /* عنصر HTML الزوجة */
+  const wrap=document.createElement('div');wrap.className='spouse-node';
+  const ringClass='spouse-ring '+(sp.sex==='f'?'f':'m');
+  wrap.innerHTML=`<div class="${ringClass}">${avatarSVG(sp.sex)}</div>
+    <div class="spouse-name">${sp.name||'—'}</div>
+    <div class="spouse-label">زوج${sp.sex==='f'?'ة':''}</div>`;
+  /* الزوجة على يمين الشخص (x أكبر في RTL) — مركزها بحيث الخط يصل من حافة الصورة */
+  wrap.style.left=(nx+OFFSET)+'px';
+  wrap.style.top=(ny-26)+'px';
+  wrap.style.transform='translateX(-50%)';
+  canvas.appendChild(wrap);spouseEls.push(wrap);
+
+  /* خط أفقي متقطع من حافة صورة الشخص حتى صورة الزوجة */
+  const lineH=document.createElement('div');
+  lineH.style.cssText=`position:absolute;top:${ny}px;left:${nx+30}px;width:${OFFSET-52}px;height:0;
+    border-top:2.5px dashed color-mix(in srgb,var(--rose) 75%,transparent);
+    transform:translateY(-50%);pointer-events:none`;
+  canvas.appendChild(lineH);spouseEls.push(lineH);
+
+  setTimeout(()=>wrap.classList.add('show'),50);
+}
+
 function hideAll(){
   Object.values(nodeEls).forEach(el=>{el.classList.remove('visible');el.classList.add('hidden')});
   lineEls.forEach(l=>l.remove());lineEls=[];
+  clearSpouses();
 }
 
 function showRoot(){hideAll();history=[];createNode('zamil');placeNodes(['zamil'],null);backBtn.classList.add('hidden');closeInfo()}
 
 function onNodeClick(id){
-  /* الضغط على الكارد: يفتح الأبناء فقط — نافذة ⓘ من زر ⓘ حصراً */
-  if((FAM[id].children||[]).length>0 && history[history.length-1]!==id)expandNode(id);
+  /* الضغط على الكارد: يفتح الأبناء أو يعرض الزوجة */
+  const kids=(FAM[id].children||[]);
+  if(kids.length>0 && history[history.length-1]!==id){
+    expandNode(id);
+  } else if(FAM[id].spouse && history[history.length-1]!==id){
+    /* شخص بدون أبناء — اعرضه منفرداً مع زوجته */
+    if(history[history.length-1]===id)return;
+    history.push(id);hideAll();
+    const {w,h}=getSize();
+    createNode(id);
+    nodeEls[id].style.left=w/2+'px';nodeEls[id].style.top=h*0.5+'px';
+    nodeEls[id].classList.remove('hidden');nodeEls[id].classList.add('visible');
+    setTimeout(()=>showSpouseFor(id),200);
+    backBtn.classList.remove('hidden');
+  }
 }
 
 function expandNode(id){
@@ -519,7 +627,10 @@ function expandNode(id){
   nodeEls[id].style.left=w/2+'px';nodeEls[id].style.top=h*0.17+'px';
   nodeEls[id].classList.remove('hidden');nodeEls[id].classList.add('visible');
   kids.forEach(kid=>createNode(kid));placeNodes(kids,id);
-  setTimeout(()=>{kids.forEach(kid=>drawLine(id,kid,FAM[kid]?.role==='wife'))},120);
+  setTimeout(()=>{
+    kids.forEach(kid=>drawLine(id,kid,FAM[kid]?.role==='wife'));
+    showSpouseFor(id); /* الزوجة الخارجية جانبه */
+  },150);
   backBtn.classList.remove('hidden');
 }
 
