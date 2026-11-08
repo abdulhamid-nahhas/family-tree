@@ -349,7 +349,7 @@ textarea.form-input{resize:vertical;min-height:52px}
   <!-- إضافة زوج/ة ومولود -->
   <div id="add-child-section" style="border-top:1px solid var(--border);padding:10px 14px;flex-shrink:0">
     <!-- إضافة زوج/ة -->
-    <div style="margin-bottom:10px">
+    <div id="add-spouse-row" style="margin-bottom:10px">
       <div style="font-size:.7rem;font-weight:700;color:var(--sepia);opacity:.7;margin-bottom:5px">إضافة زوج / زوجة</div>
       <div style="display:flex;gap:8px">
         <button id="spouse-btn-m" onclick="toggleSpouseSex('m')" class="sex-btn sex-btn-m">رجل</button>
@@ -357,7 +357,7 @@ textarea.form-input{resize:vertical;min-height:52px}
       </div>
     </div>
     <!-- إضافة مولود -->
-    <div>
+    <div id="add-child-row">
       <div style="font-size:.7rem;font-weight:700;color:var(--sepia);opacity:.7;margin-bottom:5px">إضافة مولود</div>
       <div style="display:flex;gap:8px">
         <button id="child-btn-m" onclick="toggleChildSex('m')" class="sex-btn sex-btn-m">طفل</button>
@@ -863,15 +863,29 @@ function openInfoPanel(id){
   const deleteBtn=document.getElementById('delete-btn');
   if(deleteBtn) deleteBtn.style.display=(m.role==='root'?'none':'');
 
-  /* إخفاء الحقول غير المناسبة للزوجة */
+  /* إخفاء/إظهار الحقول حسب نوع الشخص */
   const isWife=(m.role==='wife');
-  ['row-nasab-order','row-bio','row-rada','add-child-section','row-fullname'].forEach(rid=>{
+  /* للزوجة: أخفِ صف النوع+الترتيب والرضاعة، أظهر باقي الحقول */
+  const hideForWife=['row-nasab-order','row-rada'];
+  /* للجميع: أخفِ أزرار الإضافة عند الزوجة */
+  const wifeHideIds=[...hideForWife,'add-spouse-row','add-child-row'];
+  /* row-fullname و row-bio: أظهرهما للجميع */
+  ['row-nasab-order','row-rada'].forEach(rid=>{
     const el=document.getElementById(rid);
     if(!el)return;
     if(isWife) el.style.display='none';
-    else if(rid==='row-nasab-order'||rid==='row-rada') el.style.display='flex';
-    else el.style.display='';
+    else el.style.display='flex';
   });
+  ['row-bio','row-fullname'].forEach(rid=>{
+    const el=document.getElementById(rid);
+    if(el) el.style.display='';
+  });
+  /* أزرار الإضافة */
+  document.getElementById('add-spouse-row').style.display=isWife?'none':'';
+  document.getElementById('add-child-row').style.display=isWife?'none':'';
+  /* إظهار/إخفاء القسم الخارجي: للزوجة اخفيه فقط لو ما في محتوى */
+  const addSec=document.getElementById('add-child-section');
+  if(addSec) addSec.style.display=isWife?'none':'';
   ['spouse-btn-m','spouse-btn-f','child-btn-m','child-btn-f'].forEach(id=>{document.getElementById(id)?.classList.remove('selected')});
   const p=document.getElementById('info-popup');
   p.classList.remove('hidden');
