@@ -342,7 +342,15 @@ textarea.form-input{resize:vertical;min-height:52px}
     </div>
   </div>
 
+  <div id="delete-confirm-bar" style="display:none;background:color-mix(in srgb,#c0392b 12%,transparent);border-top:1px solid #c0392b55;padding:8px 14px;flex-shrink:0;text-align:center;font-size:.75rem;color:#c0392b;font-family:var(--ffb)">
+    هل أنت متأكد من حذف هذا الشخص وجميع تابعيه؟
+    <div style="display:flex;gap:8px;margin-top:6px">
+      <button onclick="confirmDelete()" style="flex:1;padding:5px;border-radius:7px;border:1.5px solid #c0392b;background:#c0392b;color:#fff;font-size:.75rem;font-family:var(--ffb);cursor:pointer">نعم، احذف</button>
+      <button onclick="cancelDelete()" style="flex:1;padding:5px;border-radius:7px;border:1.5px solid #c0392b55;background:transparent;color:#c0392b;font-size:.75rem;font-family:var(--ffb);cursor:pointer">لا</button>
+    </div>
+  </div>
   <div class="info-save-row" style="flex-shrink:0">
+    <button id="delete-btn" class="info-cancel-btn" onclick="requestDelete()" style="color:#c0392b;border-color:#c0392b55;display:none">🗑 حذف</button>
     <button class="info-cancel-btn" onclick="closeInfo()">إلغاء</button>
     <button class="info-save-btn" onclick="saveEdit()">💾 حفظ</button>
   </div>
@@ -809,13 +817,57 @@ function openInfoPanel(id){
   updateAgeDisplay();
   /* إعادة ضبط أزرار الجنس */
   selectedSpouseSex=null; selectedChildSex=null;
+  const deleteBtn=document.getElementById('delete-btn');
+  if(deleteBtn) deleteBtn.style.display=(m.role==='root'?'none':'');
   ['spouse-btn-m','spouse-btn-f','child-btn-m','child-btn-f'].forEach(id=>{document.getElementById(id)?.classList.remove('selected')});
   const p=document.getElementById('info-popup');
   p.classList.remove('hidden');
 }
 /* ── الضغط على العقدة: إذا مفتوحة بالفعل لا تكرر ── */
 function showInfo(id){openInfoPanel(id)}
-function closeInfo(){document.getElementById('info-popup').classList.add('hidden')}
+function closeInfo(){
+  document.getElementById('info-popup').classList.add('hidden');
+  cancelDelete();
+}
+
+function requestDelete(){
+  document.getElementById('delete-confirm-bar').style.display='';
+}
+function cancelDelete(){
+  document.getElementById('delete-confirm-bar').style.display='none';
+}
+function deleteDescendants(id){
+  const m=FAM[id];
+  if(!m)return;
+  (m.children||[]).forEach(c=>deleteDescendants(c));
+  (m.spouseIds||[]).forEach(s=>deleteDescendants(s));
+  delete FAM[id];
+}
+function confirmDelete(){
+  if(!editingId)return;
+  const m=FAM[editingId];
+  if(!m||m.role==='root')return;
+  // remove from parent's children or spouseIds
+  const parId=m.par;
+  if(parId&&FAM[parId]){
+    FAM[parId].children=(FAM[parId].children||[]).filter(c=>c!==editingId);
+    FAM[parId].spouseIds=(FAM[parId].spouseIds||[]).filter(s=>s!==editingId);
+  }
+  // also remove from any other node referencing this id
+  Object.keys(FAM).forEach(k=>{
+    FAM[k].children=(FAM[k].children||[]).filter(c=>c!==editingId);
+    FAM[k].spouseIds=(FAM[k].spouseIds||[]).filter(s=>s!==editingId);
+  });
+  deleteDescendants(editingId);
+  saveData();
+  closeInfo();
+  // go back in history
+  history.pop();
+  const prev=history[history.length-1];
+  if(prev&&FAM[prev]) showNode(prev);
+  else showNode(Object.keys(FAM)[0]);
+  showToast('تم الحذف');
+}
 stage.addEventListener('click',closeInfo);
 
 /* ══ TAB2: FULL TREE ══ */
