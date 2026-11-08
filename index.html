@@ -676,9 +676,11 @@ function showSpouseFor(id){
   const nx=parseFloat(nodeEl.style.left);
   const ny=parseFloat(nodeEl.style.top);
   const OFFSET=105;
+  /* الذكر: الزوجة يمينه — الأنثى: الزوج يسارها */
+  const DIR=m.sex==='f'?-1:1;
 
   spIds.forEach((spId,si)=>{
-    const spX=nx+OFFSET*(si+1);
+    const spX=nx+DIR*OFFSET*(si+1);
     const spY=ny;
 
     /* عقدة الزوج/الزوجة كـ node حقيقية */
@@ -690,7 +692,7 @@ function showSpouseFor(id){
 
     /* خط أفقي متقطع */
     const lineH=document.createElement('div');
-    const lx=nx+40;const lw=spX-nx-80;
+    const lx=Math.min(nx,spX)+40;const lw=Math.abs(spX-nx)-80;
     lineH.style.cssText=`position:absolute;top:${ny}px;left:${lx}px;width:${Math.max(10,lw)}px;height:0;
       border-top:2.5px dashed color-mix(in srgb,var(--rose) 70%,transparent);
       transform:translateY(-50%);pointer-events:none;z-index:1`;
@@ -699,11 +701,11 @@ function showSpouseFor(id){
 
   /* كارد "+ زوج/زوجة" فارغ دايماً في آخر الصف */
   const addIdx=spIds.length;
-  const addX=nx+OFFSET*(addIdx+1);
+  const addX=nx+DIR*OFFSET*(addIdx+1);
   const addY=ny;
   /* خط أفقي نحو الكارد الجديد */
   const lineAdd=document.createElement('div');
-  const lxA=nx+40;const lwA=addX-nx-80;
+  const lxA=Math.min(nx,addX)+40;const lwA=Math.abs(addX-nx)-80;
   lineAdd.style.cssText=`position:absolute;top:${addY}px;left:${lxA}px;width:${Math.max(10,lwA)}px;height:0;
     border-top:2.5px dashed color-mix(in srgb,var(--gold) 40%,transparent);
     transform:translateY(-50%);pointer-events:none;z-index:1`;
