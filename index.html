@@ -1403,14 +1403,14 @@ function saveEdit(){
   /* إعادة رسم فورية */
   closeInfo();
   const curId=history[history.length-1];
-  const parId=FAM[editingId]?.par;
+  const parIdRefresh=FAM[editingId]?.par;
   if(curId&&curId===editingId){
     history.pop();expandNode(editingId);
   } else if(curId&&curId!==editingId){
     history.pop();expandNode(curId);
-  } else if(parId&&FAM[parId]){
+  } else if(parIdRefresh&&FAM[parIdRefresh]){
     /* fallback: أعد رسم الأب */
-    expandNode(parId);
+    expandNode(parIdRefresh);
   } else {
     refreshUI(editingId);
   }
