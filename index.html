@@ -661,19 +661,28 @@ function placeNodes(ids,parentId){
     if(!parentId){
       x=w/2; y=h/2;
     } else if(w<540){
-      /* جوال: عمودان، الأول يسار */
-      const col=i%2; const row=Math.floor(i/2);
+      /* جوال طولي: درج متعرّج — الأكبر يسار فوق، وكل ابن ينزل نص خطوة عن اللي قبله */
+      const col=i%2;
       const colGap=Math.min(w*0.26, w/2-SIDE_PAD-10);
       x=w/2+(col===0?-colGap:colGap);
-      y=parY+135+row*110;
+      y=parY+135+i*58;
     } else {
-      const usable=w-2*SIDE_PAD;
-      const gap=Math.max(70, Math.min(110, usable/(n>1?n-1:1)));
-      const totalSpan=(n-1)*gap;
-      if(n===1) x=w/2;
-      else x=w/2 - totalSpan/2 + i*gap; /* i=0 → أقصى اليسار، i=n-1 → أقصى اليمين */
+      /* شاشة عريضة (كمبيوتر أو جوال بالعرض): صفوف من اليسار لليمين، وإذا ما كفى صف ننزل صف ثاني */
+      const GAP=105, CENTER=56;
+      let perRow=Math.max(2,Math.floor((w-2*SIDE_PAD-CENTER)/GAP)+1);
+      if(n<=perRow){
+        x=n===1?w/2:w/2-(n-1)*GAP/2+i*GAP;
+        y=parY+170;
+      }else{
+        if(perRow%2)perRow--;
+        const row=Math.floor(i/perRow), idx=i%perRow;
+        const nInRow=Math.min(perRow,n-row*perRow);
+        const leftCount=Math.ceil(nInRow/2);
+        /* فراغ في النص يمر منه الجذع بدون ما يقطع أي صورة */
+        x=idx<leftCount ? w/2-CENTER/2-(leftCount-idx-0.5)*GAP : w/2+CENTER/2+(idx-leftCount+0.5)*GAP;
+        y=parY+170+row*150;
+      }
       x=Math.max(SIDE_PAD, Math.min(w-SIDE_PAD, x));
-      y=parY+160;
     }
 
     el.style.left=x+'px'; el.style.top=y+'px';
@@ -936,8 +945,9 @@ function ringGeom(el){
 /* خطوط الأبناء: في الجوال جذع في النص، وكل ابن يدخل له فرع أفقي من الجنب */
 function drawKidLines(parentId,kids,dashedFn){
   const {w}=getSize();
-  if(w>=540||!kids.length){kids.forEach(k=>drawLine(parentId,k,dashedFn(k)));return;}
+  if(!kids.length)return;
   const pEl=nodeEls[parentId];if(!pEl)return;
+  if(w>=540){drawBusLines(pEl,kids,dashedFn,w);return;}
   const P=ringGeom(pEl);
   const sx=w/2;
   const G=kids.map(k=>nodeEls[k]?{k,...ringGeom(nodeEls[k])}:null).filter(Boolean);
@@ -958,6 +968,37 @@ function drawKidLines(parentId,kids,dashedFn){
   G.forEach(g=>{
     const edge=g.x<sx?g.x+g.r+2:g.x-g.r-2;
     add(`M${sx},${g.cy} L${edge},${g.cy}`,dashedFn(g.k));
+  });
+}
+
+/* الشاشة العريضة: خط أفقي فوق كل صف، ومنه خط نازل لكل ابن من فوق — وجذع في النص بين الصفوف */
+function drawBusLines(pEl,kids,dashedFn,w){
+  const P=ringGeom(pEl);
+  const G=kids.map(k=>nodeEls[k]?{k,...ringGeom(nodeEls[k])}:null).filter(Boolean);
+  if(!G.length)return;
+  const add=(d,dashed)=>{
+    const path=document.createElementNS('http://www.w3.org/2000/svg','path');
+    path.setAttribute('d',d);
+    path.setAttribute('class','line '+(dashed?'line-wife':'line-child')+' drawn');
+    path.style.strokeDasharray=dashed?'6 4':'none';
+    linesSVG.appendChild(path);lineEls.push(path);
+  };
+  const rows={};G.forEach(g=>{const key=Math.round(g.cy);(rows[key]=rows[key]||[]).push(g);});
+  const keys=Object.keys(rows).map(Number).sort((a,b)=>a-b);
+  const multi=keys.length>1, sx=w/2;
+  const allDashed=G.every(g=>dashedFn(g.k));
+  const busYs=keys.map(k=>k-rows[k][0].r-16);
+  /* من الأب لأول خط أفقي */
+  add(`M${P.x},${P.bottom} L${P.x},${busYs[0]}`,allDashed);
+  /* الجذع في النص بين الصفوف */
+  if(multi) add(`M${sx},${busYs[0]} L${sx},${busYs[busYs.length-1]}`,allDashed);
+  keys.forEach((k,ri)=>{
+    const row=rows[k], by=busYs[ri];
+    const xs=row.map(g=>g.x);
+    if(multi)xs.push(sx);
+    if(ri===0)xs.push(P.x);
+    add(`M${Math.min(...xs)},${by} L${Math.max(...xs)},${by}`,allDashed);
+    row.forEach(g=>add(`M${g.x},${by} L${g.x},${g.cy-g.r-2}`,dashedFn(g.k)));
   });
 }
 
