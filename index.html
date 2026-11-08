@@ -588,18 +588,17 @@ function placeNodes(ids,parentId){
     if(!parentId){
       x=w/2; y=h/2;
     } else if(w<540){
-      /* جوال: عمودان، الأول يمين */
+      /* جوال: عمودان، الأول يسار */
       const col=i%2; const row=Math.floor(i/2);
       const colGap=Math.min(w*0.26, w/2-SIDE_PAD-10);
-      /* col=0 → يمين، col=1 → يسار */
-      x=w/2+(col===0?colGap:-colGap);
+      x=w/2+(col===0?-colGap:colGap);
       y=parY+135+row*110;
     } else {
       const usable=w-2*SIDE_PAD;
       const gap=Math.max(70, Math.min(110, usable/(n>1?n-1:1)));
       const totalSpan=(n-1)*gap;
       if(n===1) x=w/2;
-      else x=w/2 - totalSpan/2 + iRTL*gap;
+      else x=w/2 - totalSpan/2 + i*gap; /* i=0 → أقصى اليسار، i=n-1 → أقصى اليمين */
       x=Math.max(SIDE_PAD, Math.min(w-SIDE_PAD, x));
       y=parY+160;
     }
