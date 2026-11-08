@@ -634,7 +634,7 @@ window.addEventListener('resize',()=>{
     createNode(cur);
     nodeEls[cur].style.left=w/2+'px';nodeEls[cur].style.top=h*0.17+'px';
     nodeEls[cur].classList.remove('hidden');nodeEls[cur].classList.add('visible');
-    const kids=FAM[cur].children||[];
+    const kids=sortedChildren(cur);
     if(kids.length){
       kids.forEach(k=>createNode(k));
       placeNodes(kids,cur);
@@ -693,7 +693,7 @@ function showRoot(){hideAll();history=[];createNode('zamil');placeNodes(['zamil'
 
 function onNodeClick(id){
   /* الضغط على الكارد: يفتح الأبناء أو يعرض الزوجة */
-  const kids=(FAM[id].children||[]);
+  const kids=sortedChildren(id);
   if(kids.length>0 && history[history.length-1]!==id){
     expandNode(id);
   } else if(FAM[id].spouse && history[history.length-1]!==id){
@@ -710,7 +710,7 @@ function onNodeClick(id){
 }
 
 function expandNode(id){
-  const kids=FAM[id].children||[];if(!kids.length)return;
+  const kids=sortedChildren(id);if(!kids.length)return;
   /* لا تكرر نفس العقدة في التاريخ */
   if(history[history.length-1]===id)return;
   history.push(id);hideAll();
@@ -721,8 +721,7 @@ function expandNode(id){
   kids.forEach(kid=>createNode(kid));placeNodes(kids,id);
   setTimeout(()=>{
     kids.forEach(kid=>drawLine(id,kid,FAM[kid]?.role==='wife'));
-    showSpouseFor(id); /* زوجة الأب جانبه */
-    /* زوجات الأبناء: لا تُظهر هنا — تظهر فقط لما تضغط على الابن نفسه */
+    showSpouseFor(id);
   },150);
   backBtn.classList.remove('hidden');
 }
@@ -1061,31 +1060,56 @@ function handleAvatarUpload(e){
   };
   r.readAsDataURL(f);
 }
+/* يرتب أبناء شخص حسب order (من لا order له يأتي آخراً بترتيب إضافته) */
+function sortedChildren(id){
+  const kids=(FAM[id]?.children||[]).slice();
+  kids.sort((a,b)=>{
+    const oa=FAM[a]?.order??9999;
+    const ob=FAM[b]?.order??9999;
+    return oa-ob;
+  });
+  return kids;
+}
+
 function saveEdit(){
   if(!editingId)return;
   const shortVal=document.getElementById('edit-short').value.trim();
-  const orderVal=parseInt(document.getElementById('edit-order')?.value)||null;
+  const orderRaw=document.getElementById('edit-order')?.value.trim();
+  const orderVal=orderRaw?parseInt(orderRaw):null;
   const fullName=document.getElementById('edit-name').value.trim();
   const nasabVal=(document.getElementById('edit-nasab')?.value||'').trim();
   const bio=document.getElementById('edit-bio').value.trim();
   const birth=document.getElementById('edit-birth').value.trim();
   const death=document.getElementById('edit-death').value.trim();
   if(!shortVal){showToast('الاسم الأول مطلوب');return}
+
+  /* تحقق من تكرار الترتيب بين الإخوة */
+  if(orderVal){
+    const parId=FAM[editingId]?.par;
+    if(parId&&FAM[parId]){
+      const siblings=(FAM[parId].children||[]).filter(s=>s!==editingId);
+      const dup=siblings.find(s=>FAM[s]?.order===orderVal);
+      if(dup){
+        showToast('⚠ الترتيب '+orderVal+' مستخدم لـ "'+(FAM[dup].short||FAM[dup].name)+'" — اختر رقماً آخر');
+        return;
+      }
+    }
+  }
+
   FAM[editingId].short=shortVal;
   if(orderVal) FAM[editingId].order=orderVal; else delete FAM[editingId].order;
   FAM[editingId].name=fullName||shortVal;
   if(nasabVal) FAM[editingId].nasab=nasabVal; else delete FAM[editingId].nasab;
   FAM[editingId].bio=bio;
-  /* التواريخ */
   if(birth) FAM[editingId].birth=birth; else delete FAM[editingId].birth;
   if(death) FAM[editingId].death=death; else delete FAM[editingId].death;
   if(pendingPhoto)FAM[editingId].photo=pendingPhoto;
   if(editingRada) FAM[editingId].rada=true; else delete FAM[editingId].rada;
+
   /* تطبيق الزوج/ة المحدد */
   if(selectedSpouseSex){
     const spId='sp_'+editingId+'_'+Date.now();
     FAM[spId]={name:(selectedSpouseSex==='f'?'زوجة':'زوج'),sex:selectedSpouseSex,role:'wife',par:editingId,children:[],photo:null};
-    /* نربطه بالشخص */
     if(!FAM[editingId].spouseIds) FAM[editingId].spouseIds=[];
     FAM[editingId].spouseIds.push(spId);
   }
@@ -1096,11 +1120,24 @@ function saveEdit(){
     if(!FAM[editingId].children) FAM[editingId].children=[];
     FAM[editingId].children.push(chId);
   }
-  saveData();refreshUI(editingId);
-  clearSpouses();
+
+  saveData();
+
+  /* إعادة رسم فورية: أعد expand للشخص الحالي في التاريخ */
+  closeInfo();
   const curId=history[history.length-1];
-  if(curId) showSpouseFor(curId);
-  closeInfo();showToast('✓ تم الحفظ');
+  if(curId&&curId!==editingId){
+    /* editingId هو ابن — أعد رسم الأب بأبنائه المرتبين */
+    history.pop();
+    expandNode(curId);
+  } else if(curId===editingId){
+    /* editingId هو الشخص المفتوح نفسه — أعد رسمه */
+    history.pop();
+    expandNode(editingId);
+  } else {
+    refreshUI(editingId);
+  }
+  showToast('✓ تم الحفظ');
 }
 
 /* ── أزرار الجنس toggle ── */
