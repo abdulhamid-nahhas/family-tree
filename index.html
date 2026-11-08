@@ -307,7 +307,7 @@ textarea.form-input{resize:vertical;min-height:52px}
       </div>
       <div class="info-field-row" style="flex:1">
         <label class="info-field-label">لمن؟</label>
-        <input id="edit-relof" class="info-field-input" type="text" placeholder="اسم الأب / الأم">
+        <input id="edit-relof" class="info-field-input" type="text" placeholder="اسم الأب / الأم / الزوج / الزوجة">
       </div>
       <div class="info-field-row" style="width:72px;flex-shrink:0">
         <label class="info-field-label">الترتيب</label>
@@ -321,14 +321,8 @@ textarea.form-input{resize:vertical;min-height:52px}
       <label class="info-field-label">النبذة / السيرة</label>
       <textarea id="edit-bio" class="info-field-input" placeholder="نبذة مختصرة..." style="height:52px;resize:none"></textarea>
     </div>
-    <!-- رضاعة + جنس toggles (مخفي للزوجة) -->
-    <div id="row-rada" style="display:flex;align-items:center;gap:14px;margin-bottom:6px;flex-wrap:wrap">
-      <label class="info-field-label" style="margin:0;flex-shrink:0">رضاعة</label>
-      <button id="rada-toggle" onclick="toggleRada()" style="display:flex;align-items:center;gap:7px;padding:5px 12px;border-radius:20px;border:2px solid var(--border);background:transparent;cursor:pointer;font-family:var(--ffb);font-size:.75rem;color:var(--sepia);transition:all .15s">
-        <span id="rada-ring-preview" style="width:16px;height:16px;border-radius:50%;border:2.5px solid var(--blue);flex-shrink:0;display:inline-block"></span>
-        <span id="rada-label">لا</span>
-      </button>
-    </div>
+    <!-- row-rada محجوز للتوافق لكن فارغ — الرضاعة صارت من نوع العلاقة -->
+    <div id="row-rada" style="display:none"></div>
     <!-- صف: الميلاد + العمر + الوفاة -->
     <div style="display:flex;gap:8px;align-items:flex-end">
       <div class="info-field-row" style="flex:1">
@@ -1146,11 +1140,13 @@ function openEditModal(id){openInfoPanel(id)} /* للتوافق مع أزرار 
 function triggerAvatarUpload(){document.getElementById('avatar-file-input').click()}
 
 /* ── Crop دائري ── */
-let cropImg=null,cropDrag=false,cropX=0,cropY=0,cropR=60,cropOX=0,cropOY=0,cropScale=1;
+let cropImg=null,cropDrag=false,cropX=0,cropY=0,cropOX=0,cropOY=0,cropScale=1,cropBaseScale=1;
 
 function handleAvatarUpload(e){
   const f=e.target.files[0];if(!f)return;
   if(f.size>15*1024*1024){showToast('الصورة أكبر من 15MB');return}
+  /* أزل modal قديم لضمان بداية نظيفة */
+  const old=document.getElementById('crop-modal');if(old)old.remove();
   const r=new FileReader();
   r.onload=ev=>{
     const img=new Image();
@@ -1162,70 +1158,84 @@ function handleAvatarUpload(e){
 }
 
 function openCropModal(){
-  let modal=document.getElementById('crop-modal');
-  if(!modal){
-    modal=document.createElement('div');
-    modal.id='crop-modal';
-    modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:400;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px';
-    modal.innerHTML=`
-      <div style="color:#fff;font-family:var(--ffb);font-size:.85rem;opacity:.8">حرك الصورة لتحديد المنطقة ← زوم</div>
-      <canvas id="crop-canvas" width="260" height="260" style="border-radius:50%;cursor:move;touch-action:none;border:3px solid var(--gold)"></canvas>
-      <input type="range" id="crop-zoom" min="50" max="300" value="100" style="width:200px;accent-color:var(--gold)">
-      <div style="display:flex;gap:12px">
-        <button onclick="applyCrop()" style="padding:8px 24px;border-radius:10px;border:none;background:var(--gold);color:#fff;font-family:var(--ffb);font-size:.85rem;cursor:pointer">✓ تطبيق</button>
-        <button onclick="closeCropModal()" style="padding:8px 24px;border-radius:10px;border:1.5px solid #fff5;background:transparent;color:#fff;font-family:var(--ffb);font-size:.85rem;cursor:pointer">إلغاء</button>
-      </div>`;
-    document.body.appendChild(modal);
-    const cv=modal.querySelector('#crop-canvas');
-    const zm=modal.querySelector('#crop-zoom');
-    zm.addEventListener('input',()=>{cropScale=zm.value/100;drawCrop()});
-    /* سحب بالماوس */
-    cv.addEventListener('mousedown',ev=>{cropDrag=true;cropOX=ev.clientX-cropX;cropOY=ev.clientY-cropY});
-    window.addEventListener('mousemove',ev=>{if(!cropDrag)return;cropX=ev.clientX-cropOX;cropY=ev.clientY-cropOY;drawCrop()});
-    window.addEventListener('mouseup',()=>cropDrag=false);
-    /* سحب باللمس */
-    cv.addEventListener('touchstart',ev=>{const t=ev.touches[0];cropDrag=true;cropOX=t.clientX-cropX;cropOY=t.clientY-cropY},{passive:true});
-    cv.addEventListener('touchmove',ev=>{if(!cropDrag)return;const t=ev.touches[0];cropX=t.clientX-cropOX;cropY=t.clientY-cropOY;drawCrop();ev.preventDefault()},{passive:false});
-    cv.addEventListener('touchend',()=>cropDrag=false);
-  }
-  modal.style.display='flex';
-  /* إعادة تهيئة الموضع */
-  const cv=document.getElementById('crop-canvas');
-  const s=Math.min(cropImg.width,cropImg.height);
-  cropScale=260/s; cropX=(260-cropImg.width*cropScale)/2; cropY=(260-cropImg.height*cropScale)/2;
-  document.getElementById('crop-zoom').value=Math.round(cropScale*100);
-  drawCrop();
+  if(!cropImg)return;
+  /* ── الحساب الأساسي: تكبير الصورة لتملأ الدائرة 260px ── */
+  const CS=260;
+  cropBaseScale=CS/Math.min(cropImg.width,cropImg.height);
+  cropScale=cropBaseScale;
+  cropX=(CS-cropImg.width*cropScale)/2;
+  cropY=(CS-cropImg.height*cropScale)/2;
+
+  /* ── إنشاء modal جديد في كل مرة ── */
+  const modal=document.createElement('div');
+  modal.id='crop-modal';
+  modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:400;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px';
+  modal.innerHTML=`
+    <div style="color:#fff;font-family:var(--ffb);font-size:.82rem;opacity:.75;text-align:center">حرك الصورة ثم اضغط تطبيق</div>
+    <canvas id="crop-canvas" width="${CS}" height="${CS}" style="border-radius:50%;cursor:grab;touch-action:none;border:3px solid var(--gold);display:block"></canvas>
+    <div style="display:flex;align-items:center;gap:10px">
+      <span style="color:#fff;opacity:.6;font-size:.75rem">−</span>
+      <input id="crop-zoom" type="range" min="100" max="400" value="100" style="width:180px;accent-color:var(--gold)">
+      <span style="color:#fff;opacity:.6;font-size:.75rem">+</span>
+    </div>
+    <div style="display:flex;gap:12px">
+      <button id="crop-apply-btn" style="padding:9px 28px;border-radius:10px;border:none;background:var(--gold);color:#fff;font-family:var(--ffb);font-size:.85rem;cursor:pointer">✓ تطبيق</button>
+      <button id="crop-cancel-btn" style="padding:9px 28px;border-radius:10px;border:1.5px solid #fff5;background:transparent;color:#fff;font-family:var(--ffb);font-size:.85rem;cursor:pointer">إلغاء</button>
+    </div>`;
+  document.body.appendChild(modal);
+
+  const cv=modal.querySelector('#crop-canvas');
+  const zm=modal.querySelector('#crop-zoom');
+
+  /* zoom: القيمة 100 = cropBaseScale، 400 = 4× cropBaseScale */
+  zm.addEventListener('input',()=>{
+    cropScale=cropBaseScale*(zm.value/100);
+    drawCrop(cv);
+  });
+
+  /* سحب ماوس */
+  cv.addEventListener('mousedown',ev=>{cropDrag=true;cv.style.cursor='grabbing';cropOX=ev.clientX-cropX;cropOY=ev.clientY-cropY;ev.preventDefault()});
+  window.addEventListener('mousemove',ev=>{if(!cropDrag)return;cropX=ev.clientX-cropOX;cropY=ev.clientY-cropOY;drawCrop(cv)});
+  window.addEventListener('mouseup',()=>{cropDrag=false;cv.style.cursor='grab'},{once:false});
+
+  /* سحب لمس */
+  cv.addEventListener('touchstart',ev=>{const t=ev.touches[0];cropDrag=true;cropOX=t.clientX-cropX;cropOY=t.clientY-cropY},{passive:true});
+  cv.addEventListener('touchmove',ev=>{if(!cropDrag)return;const t=ev.touches[0];cropX=t.clientX-cropOX;cropY=t.clientY-cropOY;drawCrop(cv);ev.preventDefault()},{passive:false});
+  cv.addEventListener('touchend',()=>cropDrag=false);
+
+  modal.querySelector('#crop-apply-btn').onclick=()=>applyCrop(cv,modal);
+  modal.querySelector('#crop-cancel-btn').onclick=()=>modal.remove();
+
+  drawCrop(cv);
 }
 
-function drawCrop(){
-  const cv=document.getElementById('crop-canvas');if(!cv||!cropImg)return;
+function drawCrop(cv){
+  if(!cv||!cropImg)return;
+  const CS=260;
   const ctx=cv.getContext('2d');
-  ctx.clearRect(0,0,260,260);
+  ctx.clearRect(0,0,CS,CS);
   ctx.save();
-  ctx.beginPath();ctx.arc(130,130,130,0,Math.PI*2);ctx.clip();
+  ctx.beginPath();ctx.arc(CS/2,CS/2,CS/2,0,Math.PI*2);ctx.clip();
   ctx.drawImage(cropImg,cropX,cropY,cropImg.width*cropScale,cropImg.height*cropScale);
   ctx.restore();
-  /* دائرة إرشادية */
-  ctx.strokeStyle='rgba(255,255,255,.4)';ctx.lineWidth=1.5;
-  ctx.beginPath();ctx.arc(130,130,129,0,Math.PI*2);ctx.stroke();
+  ctx.strokeStyle='rgba(255,255,255,.35)';ctx.lineWidth=1.5;
+  ctx.beginPath();ctx.arc(CS/2,CS/2,CS/2-1,0,Math.PI*2);ctx.stroke();
 }
 
-function applyCrop(){
-  const cv=document.getElementById('crop-canvas');if(!cv)return;
-  /* ضغط إلى 200x200 */
+function applyCrop(cv,modal){
+  if(!cv)return;
   const out=document.createElement('canvas');out.width=200;out.height=200;
   const ctx=out.getContext('2d');
   ctx.beginPath();ctx.arc(100,100,100,0,Math.PI*2);ctx.clip();
   ctx.drawImage(cv,0,0,260,260,0,0,200,200);
-  const dataUrl=out.toDataURL('image/jpeg',0.82);
+  const dataUrl=out.toDataURL('image/jpeg',0.85);
   pendingPhoto=dataUrl;
-  document.getElementById('info-av').innerHTML=`<img src="${dataUrl}">`;
-  closeCropModal();
-}
-
-function closeCropModal(){
-  const m=document.getElementById('crop-modal');
-  if(m) m.style.display='none';
+  /* تحديث فوري للصورة في النافذة */
+  const avEl=document.getElementById('info-av');
+  if(avEl){
+    avEl.innerHTML=`<img src="${dataUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
+  }
+  if(modal) modal.remove();
 }
 /* يرتب أبناء شخص حسب order (من لا order له يأتي آخراً بترتيب إضافته) */
 function sortedChildren(id){
@@ -1296,17 +1306,17 @@ function saveEdit(){
 
   saveData();
 
-  /* إعادة رسم فورية: أعد expand للشخص الحالي في التاريخ */
+  /* إعادة رسم فورية */
   closeInfo();
   const curId=history[history.length-1];
-  if(curId&&curId!==editingId){
-    /* editingId هو ابن — أعد رسم الأب بأبنائه المرتبين */
-    history.pop();
-    expandNode(curId);
-  } else if(curId===editingId){
-    /* editingId هو الشخص المفتوح نفسه — أعد رسمه */
-    history.pop();
-    expandNode(editingId);
+  const parId=FAM[editingId]?.par;
+  if(curId&&curId===editingId){
+    history.pop();expandNode(editingId);
+  } else if(curId&&curId!==editingId){
+    history.pop();expandNode(curId);
+  } else if(parId&&FAM[parId]){
+    /* fallback: أعد رسم الأب */
+    expandNode(parId);
   } else {
     refreshUI(editingId);
   }
