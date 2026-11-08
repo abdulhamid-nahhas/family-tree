@@ -1185,12 +1185,27 @@ function confirmAddChild(){
 }
 
 function refreshUI(id){
+  const m=FAM[id];
+  if(!m)return;
   if(nodeEls[id]){
-    const ring=nodeEls[id].querySelector('.avatar-ring');if(ring)ring.innerHTML=avatarHTML(id);
-    const lbl=nodeEls[id].querySelector('.node-name');if(lbl)lbl.textContent=FAM[id].short||shortName(FAM[id].name,id);
+    const ring=nodeEls[id].querySelector('.avatar-ring');
+    if(ring){
+      ring.innerHTML=avatarHTML(id);
+      ring.className='avatar-ring'+(m.sex==='f'?' female':'')+(m.rada?' rada':'')+(m.role==='root'?' root':'');
+    }
+    const lbl=nodeEls[id].querySelector('.node-name');if(lbl)lbl.textContent=m.short||shortName(m.name,id);
   }
   const card=document.querySelector(`.profile-card[data-id="${id}"]`);
-  if(card){const av=card.querySelector('.pc-avatar');if(av)av.innerHTML=avatarHTML(id);const nm=card.querySelector('.pc-name');if(nm)nm.textContent=FAM[id].name;}
+  if(card){
+    const av=card.querySelector('.pc-avatar');
+    if(av){
+      av.innerHTML=avatarHTML(id);
+      av.className='pc-avatar'+(m.sex==='f'?' female':'')+(m.rada?' rada':'')+(m.role==='root'?' root':'')+(m.rada?(m.sex==='f'?' rada rada-f':' rada rada-m'):'');
+    }
+    const nm=card.querySelector('.pc-name');if(nm)nm.textContent=m.name;
+    const role=card.querySelector('.pc-role');
+    if(role)role.textContent=m.role==='root'?'الجد الأكبر':m.role==='wife'?'زوجة':(m.rada?(m.sex==='f'?'رضاعة أنثى':'رضاعة ذكر'):getNasab(id));
+  }
   ftBuilt=false;document.getElementById('full-tree-svg').innerHTML='';
 }
 function closeModal(){closeInfo()} /* للتوافق */
