@@ -881,10 +881,16 @@ function onNodeClick(id){
   /* الضغط على الكارد: يفتح الأبناء أو يعرض الشخص مع زوجاته */
   const m=FAM[id];if(!m)return;
   /* الزوجات والأزواج (role=wife) لا يُفتح لهم view مستقل — نتجاهل الضغط */
-  if(m.role==='wife'){showSpouseView(id);return;}
+  const curView=history[history.length-1];
+  /* الضغط على الزوج/الزوجة المعروض حالياً → نافذة معلوماته للتعديل والإضافة */
+  if(m.role==='wife'){
+    if(curView==='sp:'+id){openInfoPanel(id);return;}
+    showSpouseView(id);return;
+  }
   /* البنت المتزوجة: زوجها يسارها وأبناؤها يتفرعون من زوجها */
   if(m.sex==='f'){
     const hs=wivesOf(id);
+    if(hs.length===1&&curView==='sp:'+hs[0]){openInfoPanel(id);return;}
     if(hs.length===1&&history[history.length-1]!=='sp:'+hs[0]){showSpouseView(hs[0],id);return;}
   }
   const kids=wivesOf(id).length>=2?wivesOf(id):sortedChildren(id);
@@ -1706,8 +1712,9 @@ function saveEdit(){
   if(relofVal) FAM[editingId].relOf=relofVal; else delete FAM[editingId].relOf;
 
   /* تطبيق الزوج/ة المحدد */
+  let addedSpouseId=null;
   if(selectedSpouseSex){
-    const spId='sp_'+editingId+'_'+Date.now();
+    const spId='sp_'+editingId+'_'+Date.now();addedSpouseId=spId;
     FAM[spId]={name:(selectedSpouseSex==='f'?'زوجة':'زوج'),sex:selectedSpouseSex,role:'wife',par:editingId,children:[],photo:null};
     if(!FAM[editingId].spouseIds) FAM[editingId].spouseIds=[];
     FAM[editingId].spouseIds.push(spId);
@@ -1715,9 +1722,20 @@ function saveEdit(){
   /* تطبيق الطفل/ة المحدد */
   if(selectedChildSex){
     const chId='ch_'+editingId+'_'+Date.now();
-    FAM[chId]={name:(selectedChildSex==='f'?'طفلة':'طفل'),sex:selectedChildSex,par:editingId,children:[],photo:null};
-    if(!FAM[editingId].children) FAM[editingId].children=[];
-    FAM[editingId].children.push(chId);
+    const ed=FAM[editingId];
+    /* من نافذة زوج البنت: الطفل يتسجل عند البنت ويطلع تحت زوجها
+       من نافذة زوجة الرجل: الطفل يتسجل عند الأب وأمه هي */
+    let holder=editingId, mother=null;
+    if(ed.role==='wife'&&ed.sex==='m'&&FAM[ed.par]) holder=ed.par;
+    else if(ed.role==='wife'&&ed.sex==='f'){
+      const own=(ed.par&&FAM[ed.par])?ed.par:Object.keys(FAM).find(k=>(FAM[k].children||[]).includes(editingId)||(FAM[k].spouseIds||[]).includes(editingId));
+      /* زوجات زامل القديمات أبناؤهن مسجلين عندهن — نخليها كذا */
+      if(own&&!(FAM[own].children||[]).includes(editingId)){holder=own;mother=editingId;}
+    }
+    FAM[chId]={name:(selectedChildSex==='f'?'طفلة':'طفل'),sex:selectedChildSex,par:holder,children:[],photo:null};
+    if(mother)FAM[chId].mother=mother;
+    if(!FAM[holder].children) FAM[holder].children=[];
+    FAM[holder].children.push(chId);
   }
 
   saveData();
@@ -1725,16 +1743,15 @@ function saveEdit(){
   /* إعادة رسم فورية */
   closeInfo();
   const curId=history[history.length-1];
-  const parIdRefresh=FAM[editingId]?.par;
-  if(curId&&curId===editingId){
-    history.pop();expandNode(editingId);
-  } else if(curId&&curId!==editingId){
-    history.pop();expandNode(curId);
-  } else if(parIdRefresh&&FAM[parIdRefresh]){
-    /* fallback: أعد رسم الأب */
-    expandNode(parIdRefresh);
+  const edm=FAM[editingId];
+  if(addedSpouseId&&edm.sex==='f'&&edm.role!=='wife'&&wivesOf(editingId).length===1){
+    /* بنت انضاف لها زوج: زوجها يسارها بخط منقط وأبناؤها ينتقلون تحته */
+    if(curId===editingId)history.pop();
+    showSpouseView(addedSpouseId,editingId);
+  } else if(curId){
+    history.pop();openEntry(curId);
   } else {
-    refreshUI(editingId);
+    showRoot();refreshUI(editingId);
   }
   showToast('✓ تم الحفظ');
 }
