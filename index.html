@@ -110,11 +110,11 @@ body{font-family:var(--ffb);background:var(--bg);color:var(--fg);display:flex;fl
   font-weight:700;line-height:1;padding:1px 5px;border-radius:5px;min-width:16px;
   text-align:center;pointer-events:none;white-space:nowrap;opacity:.9;z-index:2}
 /* زر ⓘ على يمين الصورة */
-.node-info-btn{position:absolute;top:-3px;right:-5px;width:20px;height:20px;border-radius:50%;background:var(--gold);border:none;cursor:pointer;display:none;align-items:center;justify-content:center;box-shadow:0 1px 4px rgba(0,0,0,.2);font-size:11px;color:#fff;font-weight:700;line-height:1}
+.node-info-btn{position:absolute;top:-3px;right:-5px;width:20px;height:20px;border-radius:50%;background:var(--gold);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 4px rgba(0,0,0,.2);font-size:11px;color:#fff;font-weight:700;line-height:1}
 .node:hover .node-info-btn{display:flex}
 /* سهم الرجوع على يسار الصورة عند hover */
 .node-back-hint{position:absolute;top:-3px;left:-5px;width:20px;height:20px;border-radius:50%;background:color-mix(in srgb,var(--sepia) 20%,transparent);border:none;cursor:pointer;display:none;align-items:center;justify-content:center;box-shadow:0 1px 4px rgba(0,0,0,.12)}
-.node:hover .node-back-hint{display:flex}
+.node.focus .node-back-hint{display:flex}
 .node-back-hint svg{width:12px;height:12px;fill:none;stroke:var(--sepia);stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
 /* back-btn removed — back arrow is on the node itself */
 /* ── نافذة ⓘ المنبثقة (تعرض + تعديل) ── */
@@ -846,7 +846,14 @@ function showSpouseView(spId){
     kids.forEach(k=>createNode(k));placeNodes(kids,husbandId);
     setTimeout(()=>kids.forEach(k=>drawLine(husbandId,k,false)),150);
   }
+  markFocus(ownerId);
   backBtn.classList.remove('hidden');
+}
+
+/* الشخص المعروض فوق: يظهر عليه زر الرجوع دايماً */
+function markFocus(id){
+  document.querySelectorAll('.node.focus').forEach(n=>n.classList.remove('focus'));
+  if(id&&nodeEls[id]&&history.length)nodeEls[id].classList.add('focus');
 }
 
 function hideAll(){
@@ -862,6 +869,11 @@ function onNodeClick(id){
   const m=FAM[id];if(!m)return;
   /* الزوجات والأزواج (role=wife) لا يُفتح لهم view مستقل — نتجاهل الضغط */
   if(m.role==='wife'){showSpouseView(id);return;}
+  /* البنت المتزوجة: زوجها يسارها وأبناؤها يتفرعون من زوجها */
+  if(m.sex==='f'){
+    const hs=wivesOf(id);
+    if(hs.length===1&&history[history.length-1]!=='sp:'+hs[0]){showSpouseView(hs[0]);return;}
+  }
   const kids=wivesOf(id).length>=2?wivesOf(id):sortedChildren(id);
   if(kids.length>0 && history[history.length-1]!==id){
     expandNode(id);
@@ -873,6 +885,7 @@ function onNodeClick(id){
     nodeEls[id].style.left=w/2+'px';nodeEls[id].style.top=h*0.5+'px';
     nodeEls[id].classList.remove('hidden');nodeEls[id].classList.add('visible');
     setTimeout(()=>showSpouseFor(id),200);
+    markFocus(id);
     backBtn.classList.remove('hidden');
   }
 }
@@ -894,6 +907,7 @@ function expandNode(id){
     kids.forEach(kid=>drawLine(id,kid,multi||FAM[kid]?.role==='wife'));
     if(!multi) showSpouseFor(id);
   },150);
+  markFocus(id);
   backBtn.classList.remove('hidden');
 }
 
