@@ -112,22 +112,25 @@ body{font-family:var(--ffb);background:var(--bg);color:var(--fg);display:flex;fl
 .node-back-hint svg{width:12px;height:12px;fill:none;stroke:var(--sepia);stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
 /* back-btn removed — back arrow is on the node itself */
 /* ── نافذة ⓘ المنبثقة (تعرض + تعديل) ── */
-.info-popup{position:fixed;bottom:60px;left:50%;transform:translateX(-50%);background:var(--card);border:1.5px solid var(--gold);border-radius:16px;padding:0;min-width:240px;max-width:290px;box-shadow:0 8px 28px rgba(0,0,0,.22);font-family:var(--ffb);z-index:200;transition:opacity .2s;overflow:hidden;direction:rtl}
+.info-popup{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--card);border:1.5px solid var(--gold);border-radius:16px;padding:0;min-width:300px;max-width:520px;width:96vw;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 8px 28px rgba(0,0,0,.22);font-family:var(--ffb);z-index:200;transition:opacity .2s;overflow:hidden;direction:rtl}
 .info-popup.hidden{opacity:0;pointer-events:none}
-.info-av-row{display:flex;align-items:center;gap:10px;padding:12px 14px 8px;border-bottom:1px solid var(--border)}
-.info-av{width:48px;height:48px;border-radius:50%;border:2px solid var(--blue);overflow:hidden;background:var(--sand-mid);flex-shrink:0;cursor:pointer}
+.info-av-row{display:flex;align-items:center;gap:10px;padding:10px 14px 8px;border-bottom:1px solid var(--border);flex-shrink:0}
+.info-av-wrap{position:relative;flex-shrink:0}
+.info-av{width:50px;height:50px;border-radius:50%;border:2px solid var(--blue);overflow:hidden;background:var(--sand-mid);cursor:pointer}
 .info-av.female{border-color:var(--rose)}
 .info-av.rada-m{border-style:dashed;border-color:var(--blue)}
 .info-av.rada-f{border-style:dashed;border-color:var(--rose)}
 .info-av.root{border-color:var(--sepia);border-width:3px}
 .info-av img,.info-av svg{width:100%;height:100%;object-fit:cover}
-.info-av-hint{font-size:.6rem;color:var(--gold);cursor:pointer;margin-top:3px}
-.info-meta{flex:1}
+/* أيقونة المرسمة فوق يمين الصورة */
+.info-av-edit{position:absolute;top:-4px;right:-4px;width:20px;height:20px;border-radius:50%;background:var(--gold);border:1.5px solid var(--card);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:10px;line-height:1;color:#fff;box-shadow:0 1px 4px rgba(0,0,0,.2)}
+.info-meta{flex:1;min-width:0}
 .info-name{font-family:var(--ff);font-size:.95rem;font-weight:700;color:var(--sepia)}
 .info-role{font-size:.62rem;font-weight:700;color:var(--gold)}
-.info-close-x{position:absolute;top:8px;left:10px;font-size:.85rem;color:var(--sepia);opacity:.4;cursor:pointer;background:none;border:none;font-family:var(--ffb);line-height:1}
+/* زر الإغلاق داخل النافذة */
+.info-close-x{width:28px;height:28px;border-radius:50%;background:color-mix(in srgb,var(--sepia) 12%,transparent);border:none;font-size:.85rem;color:var(--sepia);opacity:.7;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:var(--ffb);line-height:1;flex-shrink:0}
 /* حقول التعديل داخل النافذة */
-.info-fields{padding:10px 14px}
+.info-fields{padding:10px 14px;overflow-y:auto;flex:1}
 .info-field-row{margin-bottom:7px}
 .info-field-label{display:block;font-size:.68rem;font-weight:600;color:var(--sepia);margin-bottom:2px;opacity:.7}
 .info-field-input{width:100%;padding:5px 9px;border-radius:7px;border:1px solid color-mix(in srgb,var(--gold) 38%,transparent);background:var(--sand);color:var(--fg);font-family:var(--ffb);font-size:.78rem}
@@ -260,61 +263,74 @@ textarea.form-input{resize:vertical;min-height:52px}
 
 <!-- نافذة ⓘ المنبثقة (تعرض + تعديل مدمج) -->
 <div class="info-popup hidden" id="info-popup">
-  <button class="info-close-x" onclick="closeInfo()">✕</button>
   <div class="info-av-row">
-    <div class="info-av" id="info-av" onclick="triggerAvatarUpload()"></div>
+    <div class="info-av-wrap">
+      <div class="info-av" id="info-av"></div>
+      <div class="info-av-edit" onclick="triggerAvatarUpload()" title="تغيير الصورة">✏️</div>
+    </div>
     <div class="info-meta">
       <div class="info-name" id="info-name"></div>
-      <div class="info-role" id="info-role"></div>
       <div id="info-age-badge" style="font-size:.65rem;color:var(--gold);font-weight:700;margin-top:2px"></div>
-      <div class="info-av-hint" onclick="triggerAvatarUpload()">📷 تغيير الصورة</div>
     </div>
+    <button class="info-close-x" onclick="closeInfo()" style="position:relative;top:auto;left:auto;margin-right:auto;margin-left:4px;flex-shrink:0">✕</button>
   </div>
   <input type="file" id="avatar-file-input" accept="image/*" onchange="handleAvatarUpload(event)">
   <div class="info-fields">
-    <div class="info-field-row">
-      <label class="info-field-label">الاسم على البطاقة <span style="font-size:.6rem;opacity:.6">(يظهر في الشجرة)</span></label>
-      <input id="edit-short" class="info-field-input" type="text" placeholder="مثال: عبدالحميد">
+    <!-- صف: الاسم الأول + الاسم الكامل جنب بعض -->
+    <div style="display:flex;gap:8px">
+      <div class="info-field-row" style="flex:1">
+        <label class="info-field-label">الاسم الأول</label>
+        <input id="edit-short" class="info-field-input" type="text" placeholder="فلان">
+      </div>
+      <div class="info-field-row" style="flex:2">
+        <label class="info-field-label">الاسم الكامل</label>
+        <input id="edit-name" class="info-field-input" type="text" placeholder="فلان بن فلان بن فلان">
+      </div>
     </div>
-    <div class="info-field-row">
-      <label class="info-field-label">الاسم الكامل / النسب <span style="font-size:.6rem;opacity:.6">(يظهر في نافذة المعلومات فقط)</span></label>
-      <input id="edit-name" class="info-field-input" type="text" placeholder="مثال: عبد الحميد بن زامل بن جميل...">
-    </div>
+    <!-- النسب بعرض كامل -->
     <div class="info-field-row">
       <label class="info-field-label">النسب</label>
-      <div id="info-nasab-display" style="font-size:.78rem;color:var(--gold);font-weight:600;padding:4px 0;opacity:.85"></div>
+      <input id="edit-nasab" class="info-field-input" type="text" placeholder="">
     </div>
-    <div class="info-field-row">
-      <label class="info-field-label">اسم الزوج/ة <span style="font-size:.6rem;opacity:.6">(يظهر جانبك في الشجرة)</span></label>
-      <div style="display:flex;gap:6px">
-        <input id="edit-spouse-name" class="info-field-input" type="text" placeholder="اتركه فارغاً إذا أعزب" style="flex:1">
-        <select id="edit-spouse-sex" class="info-field-input" style="width:72px;flex-shrink:0">
-          <option value="f">أنثى</option>
-          <option value="m">ذكر</option>
-        </select>
-      </div>
-    </div>
+    <!-- النبذة -->
     <div class="info-field-row">
       <label class="info-field-label">النبذة / السيرة</label>
-      <textarea id="edit-bio" class="info-field-input" placeholder="نبذة مختصرة..."></textarea>
+      <textarea id="edit-bio" class="info-field-input" placeholder="نبذة مختصرة..." style="height:52px;resize:none"></textarea>
     </div>
-    <div class="info-field-row">
-      <label class="info-field-label">تاريخ الميلاد</label>
-      <div style="display:flex;gap:6px;align-items:center;flex:1">
-        <input id="edit-birth" class="info-field-input" type="text" placeholder="مثال: 1990 أو 1410هـ أو 1990-05-20" style="flex:1" oninput="updateAgeDisplay()">
-        <span id="age-display" style="font-size:.7rem;color:var(--gold);font-weight:700;white-space:nowrap;min-width:48px;text-align:center"></span>
+    <!-- صف: تاريخ الميلاد + تاريخ الوفاة جنب بعض -->
+    <div style="display:flex;gap:8px">
+      <div class="info-field-row" style="flex:1">
+        <label class="info-field-label">الميلاد</label>
+        <div style="display:flex;gap:4px;align-items:center">
+          <input id="edit-birth" class="info-field-input" type="text" placeholder="1990" style="flex:1;min-width:0" oninput="updateAgeDisplay()">
+          <span id="age-display" style="font-size:.68rem;color:var(--gold);font-weight:700;white-space:nowrap"></span>
+        </div>
       </div>
-    </div>
-    <div class="info-field-row">
-      <label class="info-field-label">تاريخ الوفاة</label>
-      <div style="display:flex;gap:6px;align-items:center;flex:1">
-        <input id="edit-death" class="info-field-input" type="text" placeholder="اتركه فارغاً إن كان حياً" style="flex:1" oninput="updateAgeDisplay()">
-        <span id="death-age-display" style="font-size:.7rem;color:var(--rose);font-weight:700;white-space:nowrap;min-width:48px;text-align:center"></span>
+      <div class="info-field-row" style="flex:1">
+        <label class="info-field-label">الوفاة</label>
+        <div style="display:flex;gap:4px;align-items:center">
+          <input id="edit-death" class="info-field-input" type="text" placeholder="إن توفي" style="flex:1;min-width:0" oninput="updateAgeDisplay()">
+          <span id="death-age-display" style="font-size:.68rem;color:var(--rose);font-weight:700;white-space:nowrap"></span>
+        </div>
       </div>
     </div>
   </div>
-  <!-- قسم إضافة مولود -->
-  <div id="add-child-section" style="border-top:1px solid var(--border);margin:0 14px 10px;padding-top:10px">
+
+  <!-- إضافة زوج/ة ومولود -->
+  <div id="add-child-section" style="border-top:1px solid var(--border);padding:10px 14px;flex-shrink:0">
+    <!-- إضافة زوج/ة -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+      <span style="font-size:.7rem;font-weight:700;color:var(--sepia);opacity:.7">إضافة زوج / زوجة</span>
+      <div style="display:flex;gap:6px">
+        <button onclick="quickAddSpouse('f')"
+          style="background:color-mix(in srgb,var(--rose) 15%,transparent);border:1px solid color-mix(in srgb,var(--rose) 40%,transparent);
+                 border-radius:6px;padding:3px 10px;font-size:.72rem;font-family:var(--ffb);color:var(--sepia);cursor:pointer">أنثى</button>
+        <button onclick="quickAddSpouse('m')"
+          style="background:color-mix(in srgb,var(--blue) 15%,transparent);border:1px solid color-mix(in srgb,var(--blue) 40%,transparent);
+                 border-radius:6px;padding:3px 10px;font-size:.72rem;font-family:var(--ffb);color:var(--sepia);cursor:pointer">ذكر</button>
+      </div>
+    </div>
+    <!-- إضافة مولود -->
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
       <span style="font-size:.7rem;font-weight:700;color:var(--sepia);opacity:.7">إضافة مولود</span>
       <button onclick="toggleAddChild()" id="add-child-toggle"
@@ -326,7 +342,7 @@ textarea.form-input{resize:vertical;min-height:52px}
     <div id="add-child-form" style="display:none;background:color-mix(in srgb,var(--gold) 7%,transparent);border-radius:8px;padding:8px 10px">
       <div class="info-field-row">
         <label class="info-field-label">الاسم الكامل</label>
-        <input id="new-child-name" class="info-field-input" type="text" placeholder="مثال: محمد عبدالحميد">
+        <input id="new-child-name" class="info-field-input" type="text" placeholder="مثال: محمد">
       </div>
       <div class="info-field-row" style="display:flex;gap:8px">
         <div style="flex:1">
@@ -348,7 +364,7 @@ textarea.form-input{resize:vertical;min-height:52px}
     </div>
   </div>
 
-  <div class="info-save-row">
+  <div class="info-save-row" style="flex-shrink:0">
     <button class="info-cancel-btn" onclick="closeInfo()">إلغاء</button>
     <button class="info-save-btn" onclick="saveEdit()">💾 حفظ</button>
   </div>
@@ -792,22 +808,22 @@ function openInfoPanel(id){
   const avEl=document.getElementById('info-av');
   avEl.innerHTML=avatarHTML(id);
   avEl.className='info-av'+(m.rada?(m.sex==='f'?' rada-f':' rada-m'):(m.sex==='f'?' female':''))+(m.role==='root'?' root':'');
-  /* اسم كامل في النافذة */
-  document.getElementById('info-name').textContent=m.name;
-  document.getElementById('info-role').textContent=m.role==='root'?'الجد الأكبر':m.role==='wife'?'زوجة':(m.rada?(m.sex==='f'?'رضاعة أنثى':'رضاعة ذكر'):'');
+  /* اسم في رأس النافذة */
+  const nameEl=document.getElementById('info-name');
+  if(nameEl) nameEl.textContent=m.short||shortName(m.name,null)||m.name;
   /* حقول التعديل */
-  /* الاسم على البطاقة: إما short صريح أو أول كلمة من الاسم */
   document.getElementById('edit-short').value=m.short||shortName(m.name,null)||'';
   document.getElementById('edit-name').value=m.name||'';
-  /* الزوج/ة */
-  document.getElementById('edit-spouse-name').value=m.spouse?.name||'';
-  document.getElementById('edit-spouse-sex').value=m.spouse?.sex||'f';
+  /* النسب التلقائي قابل للتعديل */
+  const nasabEl=document.getElementById('edit-nasab');
+  if(nasabEl) nasabEl.value=m.nasab||getNasab(id)||'';
   document.getElementById('edit-bio').value=m.bio||'';
   document.getElementById('edit-birth').value=m.birth||'';
   document.getElementById('edit-death').value=m.death||'';
-  /* النسب التلقائي */
-  document.getElementById('info-nasab-display').textContent=getNasab(id);
   updateAgeDisplay();
+  /* إعادة ضبط نموذج المولود */
+  const cf=document.getElementById('add-child-form');
+  if(cf){cf.style.display='none';const tb=document.getElementById('add-child-toggle');if(tb)tb.textContent='＋ مولود جديد';}
   const p=document.getElementById('info-popup');
   p.classList.remove('hidden');
 }
@@ -953,7 +969,7 @@ function filterProfiles(q){
 }
 
 /* ══ EDIT (داخل نافذة ⓘ) ══ */
-let editingId=null,pendingPhoto=null;
+let editingId=null,pendingPhoto=null,pendingSpouses={};
 
 function openEditModal(id){openInfoPanel(id)} /* للتوافق مع أزرار قديمة */
 
@@ -972,30 +988,42 @@ function saveEdit(){
   if(!editingId)return;
   const shortVal=document.getElementById('edit-short').value.trim();
   const fullName=document.getElementById('edit-name').value.trim();
+  const nasabVal=(document.getElementById('edit-nasab')?.value||'').trim();
   const bio=document.getElementById('edit-bio').value.trim();
   const birth=document.getElementById('edit-birth').value.trim();
   const death=document.getElementById('edit-death').value.trim();
-  if(!shortVal){showToast('الاسم على البطاقة مطلوب');return}
-  /* short = ما يظهر في الشجرة، name = النسب الكامل */
+  if(!shortVal){showToast('الاسم الأول مطلوب');return}
   FAM[editingId].short=shortVal;
   FAM[editingId].name=fullName||shortVal;
+  if(nasabVal) FAM[editingId].nasab=nasabVal; else delete FAM[editingId].nasab;
   FAM[editingId].bio=bio;
-  /* الزوج/ة */
-  const spouseName=document.getElementById('edit-spouse-name').value.trim();
-  const spouseSex=document.getElementById('edit-spouse-sex').value;
-  if(spouseName){ FAM[editingId].spouse={name:spouseName,sex:spouseSex}; }
-  else { delete FAM[editingId].spouse; }
   /* التواريخ */
   if(birth) FAM[editingId].birth=birth; else delete FAM[editingId].birth;
   if(death) FAM[editingId].death=death; else delete FAM[editingId].death;
   if(pendingPhoto)FAM[editingId].photo=pendingPhoto;
+  /* تطبيق الأزواج المعلقة */
+  if(pendingSpouses[editingId]&&pendingSpouses[editingId].length){
+    pendingSpouses[editingId].forEach(sp=>{
+      FAM[sp.id]=sp.data;
+    });
+    delete pendingSpouses[editingId];
+  }
   saveData();refreshUI(editingId);
-  /* إعادة رسم الزوجة إذا كانت تغيرت */
   clearSpouses();
   const curId=history[history.length-1];
   if(curId) showSpouseFor(curId);
-  /* زوجة الشخص الحالي فقط */
   closeInfo();showToast('✓ تم حفظ التعديل');
+}
+
+/* ── إضافة زوج/ة (تُعلَّق حتى الحفظ) ── */
+function quickAddSpouse(sex){
+  if(!editingId)return;
+  const pid=editingId;
+  const spId='sp_'+pid+'_'+Date.now();
+  const spData={name:(sex==='f'?'زوجة جديدة':'زوج جديد'),sex,role:'wife',par:pid,children:[],photo:null};
+  if(!pendingSpouses[pid])pendingSpouses[pid]=[];
+  pendingSpouses[pid].push({id:spId,data:spData});
+  showToast('سيظهر الزوج/ة بعد الحفظ ✓');
 }
 
 /* ── إضافة مولود من نافذة المعلومات ── */
