@@ -470,89 +470,35 @@ function toggleNasab(){
   else{txt.setAttribute('hidden','');arrow.classList.remove('open')}
 }
 
-/* أيقونات جيميناي كما هي — نفس الكود، نعرض نصه للرجل ونصه للمرأة */
-const GEMINI_SVG_INNER=`
-  <defs>
-    <style>
-      .base-stroke {
-        fill: none;
-        stroke: #333333;
-        stroke-width: 3;
-        stroke-linecap: round;
-        stroke-linejoin: round;
-      }
-      .shmagh-pattern {
-        fill: none;
-        stroke: #d32f2f; /* لون الشماغ الأحمر */
-        stroke-width: 2;
-        stroke-linecap: round;
-      }
-      .bg-man { fill: #e3f2fd; }
-      .bg-woman { fill: #fce4ec; }
-      .eye { fill: #333333; }
-    </style>
-  </defs>
-
-  <!-- أيقونة الرجل بالشماغ والعقال (يسار) -->
-  <g id="man-saudi" transform="translate(10, 10)">
-    <!-- الخلفية الدائرية -->
-    <circle cx="50" cy="50" r="45" class="bg-man" />
-    
-    <!-- الوجه والملامح -->
-    <path d="M40,52 Q50,62 60,52" class="base-stroke" /> <!-- الذقن والفك -->
-    <circle cx="43" cy="42" r="2.5" class="eye" /> <!-- العين اليسرى -->
-    <circle cx="57" cy="42" r="2.5" class="eye" /> <!-- العين اليمنى -->
-    <path d="M50,44 L50,48" class="base-stroke" /> <!-- الأنف -->
-    <path d="M44,54 Q50,58 56,54" class="base-stroke" /> <!-- الابتسامة -->
-
-    <!-- الشماغ والعقال -->
-    <!-- العقال الأسود (طبقتين فوق الرأس) -->
-    <path d="M36,26 Q50,22 64,26" class="base-stroke" stroke-width="5" />
-    <path d="M34,30 Q50,26 66,30" class="base-stroke" stroke-width="4" />
-    
-    <!-- قمة الشماغ -->
-    <path d="M34,30 C30,34 32,46 38,52" class="base-stroke" />
-    <path d="M66,30 C70,34 68,46 62,52" class="base-stroke" />
-    
-    <!-- أطراف الشماغ المنسدلة والخطوط الحمراء -->
-    <path d="M38,52 L26,72 L28,88 L42,88 L44,65" class="base-stroke" />
-    <path d="M32,56 L28,72" class="shmagh-pattern" />
-    <path d="M35,64 L31,80" class="shmagh-pattern" />
-    <path d="M38,72 L35,86" class="shmagh-pattern" />
-    
-    <path d="M62,52 L74,72 L72,88 L58,88 L56,65" class="base-stroke" />
-    <path d="M68,56 L72,72" class="shmagh-pattern" />
-    <path d="M65,64 L69,80" class="shmagh-pattern" />
-    <path d="M62,72 L65,86" class="shmagh-pattern" />
-
-    <!-- الجسم / الثوب -->
-    <path d="M42,65 L42,88 M58,65 L58,88" class="base-stroke" />
-    <path d="M42,72 L50,78 L58,72" class="base-stroke" /> <!-- قلاب الثوب -->
-  </g>
-
-  <!-- أيقونة المرأة (يمين) -->
-  <g id="woman-modern" transform="translate(130, 10)">
-    <!-- الخلفية الدائرية -->
-    <circle cx="50" cy="50" r="45" class="bg-woman" />
-    
-    <!-- الوجه والملامح -->
-    <circle cx="50" cy="46" r="14" class="base-stroke" fill="#fce4ec" />
-    <circle cx="44" cy="44" r="2.5" class="eye" /> <!-- العين اليسرى -->
-    <circle cx="56" cy="44" r="2.5" class="eye" /> <!-- العين اليمنى -->
-    <path d="M50,45 L50,49" class="base-stroke" /> <!-- الأنف -->
-    <path d="M44,54 Q50,59 56,54" class="base-stroke" /> <!-- الابتسامة -->
-
-    <!-- الشعر العصري البسيط -->
-    <path d="M33,48 C30,30 70,30 67,48 C68,58 64,68 64,68 C58,60 42,60 36,68 C36,68 32,58 33,48 Z" class="base-stroke" />
-
-    <!-- الجسم / اللباس -->
-    <path d="M32,88 C32,74 40,70 50,70 C60,70 68,74 68,88" class="base-stroke" />
-    <path d="M44,70 Q50,76 56,70" class="base-stroke" /> <!-- قصة الرقبة -->
-  </g>
-`;
 function avatarSVG(sex){
-  const vb=sex==='m'?'10 10 100 100':'130 10 100 100';
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${vb}" width="100%" height="100%">${GEMINI_SVG_INNER}</svg>`;
+  if(sex==='m')return`<svg class="default-avatar" viewBox="0 0 40 40" fill="none">
+    <!-- جسم/كتفان -->
+    <ellipse cx="20" cy="34" rx="12" ry="7" fill="#6A8FAF" opacity=".35"/>
+    <!-- وجه -->
+    <circle cx="20" cy="15" r="8" fill="#c8daea"/>
+    <!-- شعر قصير ذكوري -->
+    <path d="M12 14 Q12 6 20 6 Q28 6 28 14" fill="#6A8FAF" opacity=".75"/>
+    <rect x="12" y="12" width="16" height="3" rx="1.5" fill="#6A8FAF" opacity=".55"/>
+    <!-- ملامح وجه بسيطة -->
+    <circle cx="17" cy="15" r="1.2" fill="#4a6a8f" opacity=".5"/>
+    <circle cx="23" cy="15" r="1.2" fill="#4a6a8f" opacity=".5"/>
+    <path d="M17 19 Q20 21 23 19" stroke="#8aA0b0" stroke-width="1" fill="none" opacity=".5"/>
+  </svg>`;
+  return`<svg class="default-avatar" viewBox="0 0 40 40" fill="none">
+    <!-- جسم -->
+    <ellipse cx="20" cy="35" rx="12" ry="6" fill="#C5796A" opacity=".3"/>
+    <!-- وجه -->
+    <circle cx="20" cy="14" r="8" fill="#f5d5cf"/>
+    <!-- شعر طويل أنثوي -->
+    <path d="M12 10 Q11 4 20 4 Q29 4 28 10" fill="#C5796A" opacity=".8"/>
+    <!-- شعر جانبي طويل يتدلى -->
+    <path d="M12 10 Q9 16 10 24 Q11 28 13 29" stroke="#C5796A" stroke-width="3" fill="none" opacity=".65" stroke-linecap="round"/>
+    <path d="M28 10 Q31 16 30 24 Q29 28 27 29" stroke="#C5796A" stroke-width="3" fill="none" opacity=".65" stroke-linecap="round"/>
+    <!-- ملامح -->
+    <circle cx="17" cy="14" r="1.1" fill="#a05060" opacity=".5"/>
+    <circle cx="23" cy="14" r="1.1" fill="#a05060" opacity=".5"/>
+    <path d="M17.5 18.5 Q20 20.5 22.5 18.5" stroke="#C57080" stroke-width="1" fill="none" opacity=".5"/>
+  </svg>`;
 }
 function avatarHTML(id){const m=FAM[id];if(m.photo)return`<img src="${m.photo}" alt="${m.name}">`;return avatarSVG(m.sex)}
 
