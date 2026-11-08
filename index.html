@@ -114,7 +114,7 @@ body{font-family:var(--ffb);background:var(--bg);color:var(--fg);display:flex;fl
 .node.focus .node-info-btn{display:flex}
 /* سهم الرجوع على يسار الصورة عند hover */
 .node-back-hint{position:absolute;top:-3px;left:-5px;width:20px;height:20px;border-radius:50%;background:color-mix(in srgb,var(--sepia) 20%,transparent);border:none;cursor:pointer;display:none;align-items:center;justify-content:center;box-shadow:0 1px 4px rgba(0,0,0,.12)}
-.node.focus.has-back .node-back-hint{display:flex}
+.node.has-back .node-back-hint{display:flex}
 .node-back-hint svg{width:12px;height:12px;fill:none;stroke:var(--sepia);stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
 /* back-btn removed — back arrow is on the node itself */
 /* ── نافذة ⓘ المنبثقة (تعرض + تعديل) ── */
@@ -819,7 +819,7 @@ function wivesOf(id){
   return [...new Set([...a,...b])].sort((x,y)=>(FAM[x]?.order??9999)-(FAM[y]?.order??9999));
 }
 
-function showSpouseView(spId){
+function showSpouseView(spId,clickedId){
   const sp=FAM[spId];
   /* الزوج: من par، أو من الشخص اللي الزوجة مسجلة عنده */
   const ownerId=(sp.par&&FAM[sp.par])?sp.par:Object.keys(FAM).find(k=>(FAM[k].children||[]).includes(spId)||(FAM[k].spouseIds||[]).includes(spId));
@@ -846,16 +846,16 @@ function showSpouseView(spId){
     kids.forEach(k=>createNode(k));placeNodes(kids,husbandId);
     setTimeout(()=>kids.forEach(k=>drawLine(husbandId,k,false)),150);
   }
-  markFocus(ownerId);
+  markFocus(clickedId||(owner.sex==='f'?ownerId:spId),ownerId);
   backBtn.classList.remove('hidden');
 }
 
 /* الشخص المعروض فوق: يظهر عليه زر الرجوع دايماً */
-function markFocus(id){
-  document.querySelectorAll('.node.focus').forEach(n=>n.classList.remove('focus','has-back'));
-  if(!id||!nodeEls[id])return;
-  nodeEls[id].classList.add('focus');
-  if(history.length)nodeEls[id].classList.add('has-back');
+/* ⓘ على الشخص اللي ضغطت عليه فقط — والرجوع على الشخص اللي فوق */
+function markFocus(id,backId=id){
+  document.querySelectorAll('.node.focus,.node.has-back').forEach(n=>n.classList.remove('focus','has-back'));
+  if(id&&nodeEls[id])nodeEls[id].classList.add('focus');
+  if(history.length&&backId&&nodeEls[backId])nodeEls[backId].classList.add('has-back');
 }
 
 function hideAll(){
@@ -874,7 +874,7 @@ function onNodeClick(id){
   /* البنت المتزوجة: زوجها يسارها وأبناؤها يتفرعون من زوجها */
   if(m.sex==='f'){
     const hs=wivesOf(id);
-    if(hs.length===1&&history[history.length-1]!=='sp:'+hs[0]){showSpouseView(hs[0]);return;}
+    if(hs.length===1&&history[history.length-1]!=='sp:'+hs[0]){showSpouseView(hs[0],id);return;}
   }
   const kids=wivesOf(id).length>=2?wivesOf(id):sortedChildren(id);
   if(kids.length>0 && history[history.length-1]!==id){
