@@ -278,7 +278,7 @@ textarea.form-input{resize:vertical;min-height:52px}
   </div>
   <input type="file" id="avatar-file-input" accept="image/*" onchange="handleAvatarUpload(event)">
   <div class="info-fields">
-    <!-- صف: الاسم الأول + الاسم الكامل جنب بعض -->
+    <!-- صف: الاسم الأول + الاسم الكامل -->
     <div style="display:flex;gap:8px">
       <div class="info-field-row" style="flex:1">
         <label class="info-field-label">الاسم الأول</label>
@@ -289,31 +289,35 @@ textarea.form-input{resize:vertical;min-height:52px}
         <input id="edit-name" class="info-field-input" type="text" placeholder="فلان بن فلان بن فلان">
       </div>
     </div>
-    <!-- النسب بعرض كامل -->
-    <div class="info-field-row">
-      <label class="info-field-label">النسب</label>
-      <input id="edit-nasab" class="info-field-input" type="text" placeholder="">
+    <!-- صف: النسب + الترتيب -->
+    <div style="display:flex;gap:8px">
+      <div class="info-field-row" style="flex:1">
+        <label class="info-field-label">النسب</label>
+        <input id="edit-nasab" class="info-field-input" type="text" placeholder="">
+      </div>
+      <div class="info-field-row" style="width:64px;flex-shrink:0">
+        <label class="info-field-label">الترتيب</label>
+        <input id="edit-order" class="info-field-input" type="number" min="1" placeholder="١" style="text-align:center">
+      </div>
     </div>
     <!-- النبذة -->
     <div class="info-field-row">
       <label class="info-field-label">النبذة / السيرة</label>
       <textarea id="edit-bio" class="info-field-input" placeholder="نبذة مختصرة..." style="height:52px;resize:none"></textarea>
     </div>
-    <!-- صف: تاريخ الميلاد + تاريخ الوفاة جنب بعض -->
-    <div style="display:flex;gap:8px">
+    <!-- صف: الميلاد + العمر + الوفاة -->
+    <div style="display:flex;gap:8px;align-items:flex-end">
       <div class="info-field-row" style="flex:1">
         <label class="info-field-label">الميلاد</label>
-        <div style="display:flex;gap:4px;align-items:center">
-          <input id="edit-birth" class="info-field-input" type="text" placeholder="1990" style="flex:1;min-width:0" oninput="updateAgeDisplay()">
-          <span id="age-display" style="font-size:.68rem;color:var(--gold);font-weight:700;white-space:nowrap"></span>
-        </div>
+        <input id="edit-birth" class="info-field-input" type="text" placeholder="مثال: 1990م أو 1410هـ" style="min-width:0" oninput="updateAgeDisplay()">
+      </div>
+      <div class="info-field-row" style="width:58px;flex-shrink:0">
+        <label class="info-field-label">العمر</label>
+        <input id="edit-age" class="info-field-input" type="number" min="0" placeholder="—" style="text-align:center" oninput="updateBirthFromAge()">
       </div>
       <div class="info-field-row" style="flex:1">
         <label class="info-field-label">الوفاة</label>
-        <div style="display:flex;gap:4px;align-items:center">
-          <input id="edit-death" class="info-field-input" type="text" placeholder="إن توفي" style="flex:1;min-width:0" oninput="updateAgeDisplay()">
-          <span id="death-age-display" style="font-size:.68rem;color:var(--rose);font-weight:700;white-space:nowrap"></span>
-        </div>
+        <input id="edit-death" class="info-field-input" type="text" placeholder="اتركه فارغاً إن كان حياً" style="min-width:0" oninput="updateAgeDisplay()">
       </div>
     </div>
   </div>
@@ -756,22 +760,29 @@ function updateAgeDisplay(){
   const bVal=document.getElementById('edit-birth').value;
   const dVal=document.getElementById('edit-death').value;
   const r=calcAge(bVal,dVal);
-  const ageEl=document.getElementById('age-display');
-  const deathEl=document.getElementById('death-age-display');
+  const ageInput=document.getElementById('edit-age');
   const badge=document.getElementById('info-age-badge');
   if(r.age!==null && r.age>=0 && r.age<150){
+    /* اعرض العمر في المربع فقط إذا لم يكن المستخدم يكتب فيه */
+    if(ageInput && document.activeElement!==ageInput) ageInput.value=r.age;
     if(r.death){
-      ageEl.textContent='';
-      deathEl.textContent='عاش '+r.age+' سنة';
-      if(badge) badge.textContent='⚰ توفي سنة '+r.death+' — عاش '+r.age+' سنة';
+      if(badge) badge.textContent='⚰ توفي — عاش '+r.age+' سنة';
     } else {
-      ageEl.textContent=r.age+' سنة';
-      deathEl.textContent='';
       if(badge) badge.textContent='🎂 العمر: '+r.age+' سنة';
     }
   } else {
-    ageEl.textContent='';deathEl.textContent='';
+    if(ageInput && document.activeElement!==ageInput) ageInput.value='';
     if(badge) badge.textContent='';
+  }
+}
+
+function updateBirthFromAge(){
+  /* إذا أدخل المستخدم عمراً يدوياً نحسب سنة الميلاد التقريبية */
+  const ageInput=document.getElementById('edit-age');
+  const age=parseInt(ageInput?.value);
+  if(!isNaN(age) && age>=0 && age<150){
+    const birthYear=new Date().getFullYear()-age;
+    document.getElementById('edit-birth').value=birthYear+'';
   }
 }
 
@@ -787,6 +798,7 @@ function openInfoPanel(id){
   if(nameEl) nameEl.textContent=m.short||shortName(m.name,null)||m.name;
   /* حقول التعديل */
   document.getElementById('edit-short').value=m.short||shortName(m.name,null)||'';
+  document.getElementById('edit-order').value=m.order||'';
   document.getElementById('edit-name').value=m.name||'';
   /* النسب التلقائي قابل للتعديل */
   const nasabEl=document.getElementById('edit-nasab');
@@ -961,6 +973,7 @@ function handleAvatarUpload(e){
 function saveEdit(){
   if(!editingId)return;
   const shortVal=document.getElementById('edit-short').value.trim();
+  const orderVal=parseInt(document.getElementById('edit-order')?.value)||null;
   const fullName=document.getElementById('edit-name').value.trim();
   const nasabVal=(document.getElementById('edit-nasab')?.value||'').trim();
   const bio=document.getElementById('edit-bio').value.trim();
@@ -968,6 +981,7 @@ function saveEdit(){
   const death=document.getElementById('edit-death').value.trim();
   if(!shortVal){showToast('الاسم الأول مطلوب');return}
   FAM[editingId].short=shortVal;
+  if(orderVal) FAM[editingId].order=orderVal; else delete FAM[editingId].order;
   FAM[editingId].name=fullName||shortVal;
   if(nasabVal) FAM[editingId].nasab=nasabVal; else delete FAM[editingId].nasab;
   FAM[editingId].bio=bio;
