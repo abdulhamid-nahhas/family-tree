@@ -665,23 +665,23 @@ function clearSpouses(){spouseEls.forEach(e=>e.remove());spouseEls=[]}
 function showSpouseFor(id){
   const m=FAM[id];
   const nodeEl=nodeEls[id];if(!nodeEl)return;
-  /* رتّب الزوجات بحسب order ثم بحسب ترتيب الإضافة */
+  /* لا نعرض زر الزوج/زوجة للشخص الذي هو نفسه زوج/زوجة */
+  if(m.role==='wife') return;
+  /* رتّب الزوجات/الأزواج بحسب order ثم بحسب ترتيب الإضافة */
   const spIds=(m.spouseIds||[]).filter(s=>FAM[s]).sort((a,b)=>{
     const oa=FAM[a]?.order??9999;
     const ob=FAM[b]?.order??9999;
     return oa-ob;
   });
-  if(!spIds.length)return;
   const nx=parseFloat(nodeEl.style.left);
   const ny=parseFloat(nodeEl.style.top);
   const OFFSET=105;
 
   spIds.forEach((spId,si)=>{
-    const sp=FAM[spId];
     const spX=nx+OFFSET*(si+1);
     const spY=ny;
 
-    /* عقدة الزوجة كـ node حقيقية */
+    /* عقدة الزوج/الزوجة كـ node حقيقية */
     const spEl=createNode(spId);
     spEl.style.left=spX+'px';
     spEl.style.top=spY+'px';
@@ -696,6 +696,58 @@ function showSpouseFor(id){
       transform:translateY(-50%);pointer-events:none;z-index:1`;
     canvas.appendChild(lineH);spouseEls.push(lineH);
   });
+
+  /* كارد "+ زوج/زوجة" فارغ دايماً في آخر الصف */
+  const addIdx=spIds.length;
+  const addX=nx+OFFSET*(addIdx+1);
+  const addY=ny;
+  /* خط أفقي نحو الكارد الجديد */
+  const lineAdd=document.createElement('div');
+  const lxA=nx+40;const lwA=addX-nx-80;
+  lineAdd.style.cssText=`position:absolute;top:${addY}px;left:${lxA}px;width:${Math.max(10,lwA)}px;height:0;
+    border-top:2.5px dashed color-mix(in srgb,var(--gold) 40%,transparent);
+    transform:translateY(-50%);pointer-events:none;z-index:1`;
+  canvas.appendChild(lineAdd);spouseEls.push(lineAdd);
+
+  /* الكارد نفسه */
+  const addBtn=document.createElement('div');
+  addBtn.className='node hidden';
+  addBtn.style.left=addX+'px';
+  addBtn.style.top=addY+'px';
+  /* جنس الزوج/الزوجة عكس الشخص */
+  const spouseSex=m.sex==='m'?'f':'m';
+  const spouseLabel=spouseSex==='f'?'زوجة':'زوج';
+  addBtn.innerHTML=`
+    <div style="width:52px;height:52px;border-radius:50%;border:2px dashed var(--gold);
+      background:color-mix(in srgb,var(--gold) 8%,transparent);
+      display:flex;align-items:center;justify-content:center;
+      font-size:1.4rem;color:var(--gold);cursor:pointer;transition:background .2s"
+      onmouseenter="this.style.background='color-mix(in srgb,var(--gold) 18%,transparent)'"
+      onmouseleave="this.style.background='color-mix(in srgb,var(--gold) 8%,transparent)'">+</div>
+    <div style="font-size:.6rem;color:var(--gold);font-weight:700;margin-top:2px">${spouseLabel}</div>`;
+  addBtn.onclick=(e)=>{ e.stopPropagation(); addNewSpouseFor(id,spouseSex); };
+  canvas.appendChild(addBtn);
+  spouseEls.push(addBtn);
+  setTimeout(()=>addBtn.classList.remove('hidden'),50);
+  setTimeout(()=>addBtn.classList.add('visible'),80);
+}
+
+function addNewSpouseFor(ownerId,sex){
+  const spId='sp_'+ownerId+'_'+Date.now();
+  const label=sex==='f'?'زوجة':'زوج';
+  FAM[spId]={
+    name:label,short:label,sex:sex,role:'wife',
+    par:ownerId,children:[],photo:null,
+    relType:sex==='f'?'wife':'husband'
+  };
+  if(!FAM[ownerId].spouseIds) FAM[ownerId].spouseIds=[];
+  FAM[ownerId].spouseIds.push(spId);
+  saveData();
+  /* أعد رسم الزوجات */
+  spouseEls.forEach(el=>el.remove());spouseEls=[];
+  showSpouseFor(ownerId);
+  /* افتح info panel للزوج/الزوجة الجديد */
+  setTimeout(()=>openInfoPanel(spId),200);
 }
 
 function hideAll(){
@@ -707,13 +759,15 @@ function hideAll(){
 function showRoot(){hideAll();history=[];createNode('zamil');placeNodes(['zamil'],null);backBtn.classList.add('hidden');closeInfo()}
 
 function onNodeClick(id){
-  /* الضغط على الكارد: يفتح الأبناء أو يعرض الزوجة */
+  /* الضغط على الكارد: يفتح الأبناء أو يعرض الشخص مع زوجاته */
+  const m=FAM[id];if(!m)return;
+  /* الزوجات والأزواج (role=wife) لا يُفتح لهم view مستقل — فقط info panel */
+  if(m.role==='wife'){openInfoPanel(id);return;}
   const kids=sortedChildren(id);
   if(kids.length>0 && history[history.length-1]!==id){
     expandNode(id);
-  } else if(FAM[id].spouse && history[history.length-1]!==id){
-    /* شخص بدون أبناء — اعرضه منفرداً مع زوجته */
-    if(history[history.length-1]===id)return;
+  } else if(history[history.length-1]!==id){
+    /* شخص بدون أبناء — اعرضه منفرداً مع زوجاته وزر إضافة */
     history.push(id);hideAll();
     const {w,h}=getSize();
     createNode(id);
