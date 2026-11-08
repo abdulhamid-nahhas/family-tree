@@ -284,13 +284,13 @@ textarea.form-input{resize:vertical;min-height:52px}
         <label class="info-field-label">الاسم الأول</label>
         <input id="edit-short" class="info-field-input" type="text" placeholder="فلان">
       </div>
-      <div class="info-field-row" style="flex:2">
+      <div id="row-fullname" class="info-field-row" style="flex:2">
         <label class="info-field-label">الاسم الكامل</label>
         <input id="edit-name" class="info-field-input" type="text" placeholder="فلان بن فلان بن فلان">
       </div>
     </div>
-    <!-- صف: النسب + الترتيب -->
-    <div style="display:flex;gap:8px">
+    <!-- صف: النسب + الترتيب (مخفي للزوجة) -->
+    <div id="row-nasab-order" style="display:flex;gap:8px">
       <div class="info-field-row" style="flex:1">
         <label class="info-field-label">النسب</label>
         <input id="edit-nasab" class="info-field-input" type="text" placeholder="">
@@ -300,13 +300,13 @@ textarea.form-input{resize:vertical;min-height:52px}
         <input id="edit-order" class="info-field-input" type="number" min="1" placeholder="١" style="text-align:center">
       </div>
     </div>
-    <!-- النبذة -->
-    <div class="info-field-row">
+    <!-- النبذة (مخفي للزوجة) -->
+    <div id="row-bio" class="info-field-row">
       <label class="info-field-label">النبذة / السيرة</label>
       <textarea id="edit-bio" class="info-field-input" placeholder="نبذة مختصرة..." style="height:52px;resize:none"></textarea>
     </div>
-    <!-- رضاعة toggle -->
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+    <!-- رضاعة toggle (مخفي للزوجة) -->
+    <div id="row-rada" style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
       <label class="info-field-label" style="margin:0;flex-shrink:0">رضاعة</label>
       <button id="rada-toggle" onclick="toggleRada()" style="display:flex;align-items:center;gap:7px;padding:5px 12px;border-radius:20px;border:2px solid var(--border);background:transparent;cursor:pointer;font-family:var(--ffb);font-size:.75rem;color:var(--sepia);transition:all .15s">
         <span id="rada-ring-preview" style="width:16px;height:16px;border-radius:50%;border:2.5px solid var(--blue);flex-shrink:0;display:inline-block"></span>
@@ -557,13 +557,11 @@ function createNode(id){
   backHint.innerHTML='<svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>';
   backHint.onclick=e=>{e.stopPropagation();goBack()};
   /* رقم ترتيب الولادة */
-  if(m.par && FAM[m.par]){
-    const siblings=FAM[m.par].children||[];
-    const nonRada=siblings.filter(s=>!FAM[s]?.rada);
-    const idx=nonRada.indexOf(id);
-    if(idx>=0 && !m.rada){
+  if(m.par && FAM[m.par] && !m.rada && m.role!=='wife'){
+    /* رقم الترتيب الصريح إن وُجد */
+    if(m.order){
       const ob=document.createElement('span');ob.className='birth-order';
-      ob.textContent='#'+(idx+1);
+      ob.textContent='#'+m.order;
       awrap.appendChild(ob);
     }
   }
@@ -649,35 +647,36 @@ window.addEventListener('resize',()=>{
 let spouseEls=[];
 function clearSpouses(){spouseEls.forEach(e=>e.remove());spouseEls=[]}
 
-/* يُظهر الزوجة الخارجية جانب العقدة المحددة عبر SVG على canvas */
+/* يُظهر الزوجة/الزوجات جانب العقدة كعقد حقيقية قابلة للنقر */
 function showSpouseFor(id){
-  const m=FAM[id];if(!m.spouse)return;
+  const m=FAM[id];
   const nodeEl=nodeEls[id];if(!nodeEl)return;
-  const sp=m.spouse;
+  const spIds=(m.spouseIds||[]).filter(s=>FAM[s]);
+  if(!spIds.length)return;
   const nx=parseFloat(nodeEl.style.left);
   const ny=parseFloat(nodeEl.style.top);
-  const OFFSET=90; /* مسافة الزوجة عن الشخص */
+  const OFFSET=105;
 
-  /* عنصر HTML الزوجة */
-  const wrap=document.createElement('div');wrap.className='spouse-node';
-  const ringClass='spouse-ring '+(sp.sex==='f'?'f':'m');
-  wrap.innerHTML=`<div class="${ringClass}">${avatarSVG(sp.sex)}</div>
-    <div class="spouse-name">${sp.name||'—'}</div>
-    <div class="spouse-label">زوج${sp.sex==='f'?'ة':''}</div>`;
-  /* الزوجة على يمين الشخص (x أكبر في RTL) — مركزها بحيث الخط يصل من حافة الصورة */
-  wrap.style.left=(nx+OFFSET)+'px';
-  wrap.style.top=(ny-26)+'px';
-  wrap.style.transform='translateX(-50%)';
-  canvas.appendChild(wrap);spouseEls.push(wrap);
+  spIds.forEach((spId,si)=>{
+    const sp=FAM[spId];
+    const spX=nx+OFFSET*(si+1);
+    const spY=ny;
 
-  /* خط أفقي متقطع من حافة صورة الشخص حتى صورة الزوجة */
-  const lineH=document.createElement('div');
-  lineH.style.cssText=`position:absolute;top:${ny}px;left:${nx+30}px;width:${OFFSET-52}px;height:0;
-    border-top:2.5px dashed color-mix(in srgb,var(--rose) 75%,transparent);
-    transform:translateY(-50%);pointer-events:none`;
-  canvas.appendChild(lineH);spouseEls.push(lineH);
+    /* عقدة الزوجة كـ node حقيقية */
+    const spEl=createNode(spId);
+    spEl.style.left=spX+'px';
+    spEl.style.top=spY+'px';
+    spEl.classList.remove('hidden');spEl.classList.add('visible');
+    spouseEls.push(spEl);
 
-  setTimeout(()=>wrap.classList.add('show'),50);
+    /* خط أفقي متقطع */
+    const lineH=document.createElement('div');
+    const lx=nx+40;const lw=spX-nx-80;
+    lineH.style.cssText=`position:absolute;top:${ny}px;left:${lx}px;width:${Math.max(10,lw)}px;height:0;
+      border-top:2.5px dashed color-mix(in srgb,var(--rose) 70%,transparent);
+      transform:translateY(-50%);pointer-events:none;z-index:1`;
+    canvas.appendChild(lineH);spouseEls.push(lineH);
+  });
 }
 
 function hideAll(){
@@ -825,6 +824,13 @@ function openInfoPanel(id){
   updateRadaUI();
   const deleteBtn=document.getElementById('delete-btn');
   if(deleteBtn) deleteBtn.style.display=(m.role==='root'?'none':'');
+
+  /* إخفاء الحقول غير المناسبة للزوجة */
+  const isWife=(m.role==='wife');
+  ['row-nasab-order','row-bio','row-rada','add-child-section','row-fullname'].forEach(rid=>{
+    const el=document.getElementById(rid);
+    if(el) el.style.display=isWife?'none':(rid==='row-nasab-order'?'flex':rid==='row-rada'?'flex':'');
+  });
   ['spouse-btn-m','spouse-btn-f','child-btn-m','child-btn-f'].forEach(id=>{document.getElementById(id)?.classList.remove('selected')});
   const p=document.getElementById('info-popup');
   p.classList.remove('hidden');
@@ -867,12 +873,12 @@ function confirmDelete(){
   deleteDescendants(editingId);
   saveData();
   closeInfo();
-  // go back in history
-  history.pop();
+  /* إعادة رسم فورية */
+  history.pop(); /* حذف editingId من التاريخ إن وُجد */
   const prev=history[history.length-1];
-  if(prev&&FAM[prev]) showNode(prev);
-  else showNode(Object.keys(FAM)[0]);
-  showToast('تم الحذف');
+  if(prev&&FAM[prev]){history.pop();expandNode(prev);}
+  else showRoot();
+  showToast('🗑 تم الحذف');
 }
 stage.addEventListener('click',closeInfo);
 
