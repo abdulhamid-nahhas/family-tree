@@ -315,10 +315,6 @@ textarea.form-input{resize:vertical;min-height:52px}
         <label class="info-field-label">لمن؟</label>
         <input id="edit-relof" class="info-field-input" type="text" placeholder="اسم الأب / الأم / الزوج / الزوجة">
       </div>
-      <div class="info-field-row" style="width:72px;flex-shrink:0">
-        <label class="info-field-label">الترتيب</label>
-        <input id="edit-order" class="info-field-input" type="number" min="1" placeholder="١" style="text-align:center">
-      </div>
     </div>
     <!-- النسب المخفي (للحفظ فقط) -->
     <input type="hidden" id="edit-nasab">
@@ -635,7 +631,7 @@ function createNode(id){
   /* رقم ترتيب الولادة */
   if(m.par && FAM[m.par] && !m.rada && m.role!=='wife'){
     /* رقم الترتيب الصريح إن وُجد */
-    if(m.order){
+    if(false){
       const ob=document.createElement('span');ob.className='birth-order';
       ob.textContent='#'+m.order;
       awrap.appendChild(ob);
@@ -1014,7 +1010,6 @@ function openInfoPanel(id){
   if(nameEl) nameEl.textContent=m.short||shortName(m.name,null)||m.name;
   /* حقول التعديل */
   document.getElementById('edit-short').value=m.short||shortName(m.name,null)||'';
-  document.getElementById('edit-order').value=m.order||'';
   document.getElementById('edit-name').value=m.name||'';
   /* النسب التلقائي قابل للتعديل */
   const nasabEl=document.getElementById('edit-nasab');
@@ -1452,23 +1447,38 @@ function applyCrop(cv,modal){
   if(modal) modal.remove();
 }
 /* يرتب أبناء شخص حسب order (من لا order له يأتي آخراً بترتيب إضافته) */
+/* تاريخ الميلاد → رقم أيام قابل للمقارنة (يحوّل الهجري للميلادي) */
+function birthKey(str){
+  if(!str)return null;
+  str=String(str).trim().replace(/[٠-٩]/g,d=>'٠١٢٣٤٥٦٧٨٩'.indexOf(d));
+  const nums=(str.match(/\d+/g)||[]).map(Number);
+  if(!nums.length)return null;
+  let y,mo=1,d=1;
+  const yi=nums.findIndex(n=>n>=100);
+  if(yi<0)return null;
+  y=nums[yi];
+  const rest=nums.filter((_,i)=>i!==yi);
+  if(yi===0){mo=rest[0]||1;d=rest[1]||1;}   /* سنة/شهر/يوم */
+  else{d=rest[0]||1;mo=rest[1]||1;}          /* يوم/شهر/سنة */
+  if(mo>12){const t=mo;mo=d;d=t;}
+  const hijri=/[ههH]/i.test(str)||y<1600;
+  if(hijri){
+    /* أيام منذ بداية التقويم الهجري → يوم جولياني */
+    const jd=1948439.5+Math.floor((y-1)*354.36667)+Math.ceil(29.5*(mo-1))+d;
+    return jd-2440587.5; /* أيام منذ 1970 */
+  }
+  return Date.UTC(y,mo-1,d)/86400000;
+}
+/* يرتب الأبناء حسب تاريخ الميلاد — اللي ما له تاريخ يجي آخر بترتيب إضافته */
 function sortedChildren(id){
   const kids=(FAM[id]?.children||[]).slice();
-  /* استخرج سنة الميلاد من نص الميلاد */
-  function birthYear(x){
-    const b=FAM[x]?.birth||'';
-    const m=b.match(/\d{4}/);
-    return m?parseInt(m[0]):9999;
-  }
+  const idx=new Map(kids.map((k,i)=>[k,i]));
   kids.sort((a,b)=>{
-    const oa=FAM[a]?.order;
-    const ob=FAM[b]?.order;
-    /* اللي عنده order صريح يتقدم على اللي ليس له order */
-    if(oa!=null && ob!=null) return oa-ob;
-    if(oa!=null) return -1;
-    if(ob!=null) return 1;
-    /* كلاهما بدون order: رتّب بحسب سنة الميلاد */
-    return birthYear(a)-birthYear(b);
+    const ka=birthKey(FAM[a]?.birth), kb=birthKey(FAM[b]?.birth);
+    if(ka!=null&&kb!=null&&ka!==kb) return ka-kb;
+    if(ka!=null&&kb==null) return -1;
+    if(ka==null&&kb!=null) return 1;
+    return idx.get(a)-idx.get(b);
   });
   return kids;
 }
