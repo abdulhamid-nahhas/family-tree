@@ -1342,17 +1342,52 @@ async function handleAvatarUpload(e){
   if(f.size>40*1024*1024){showToast("الصورة أكبر من 40MB");input.value='';return}
   const old=document.getElementById('crop-modal');if(old)old.remove();
   showToast('⏳ جاري تجهيز الصورة...');
-  /* ننسخ بايتات الصورة للذاكرة أولاً — أندرويد يقفل الملف إذا مسحنا الحقل قبل القراءة */
+  /* نجرب أكثر من طريقة لقراءة الصورة — بعض جوالات أندرويد ترفض طريقة وتقبل غيرها */
+  const errs=[];
   let buf=null;
-  try{buf=await f.arrayBuffer();}
-  catch(err){
-    try{buf=await new Promise((ok,no)=>{const r=new FileReader();r.onload=()=>ok(r.result);r.onerror=()=>no(r.error);r.readAsArrayBuffer(f);});}
-    catch(err2){console.error('read',err,err2);}
+  const tries=[
+    ()=>f.arrayBuffer(),
+    ()=>new Response(f).arrayBuffer(),
+    ()=>new Promise((ok,no)=>{const r=new FileReader();r.onload=()=>ok(r.result);r.onerror=()=>no(r.error);r.readAsArrayBuffer(f);}),
+  ];
+  for(const t of tries){
+    try{const b=await t();if(b&&b.byteLength){buf=b;break;}errs.push('empty');}
+    catch(err){errs.push(err&&err.name||String(err));}
   }
+  if(buf){
+    input.value='';
+    loadPhotoFile(new File([buf],f.name||'photo.jpg',{type:f.type||'image/jpeg'}));
+    return;
+  }
+  /* آخر محاولة: فك الصورة مباشرة بدون قراءة البايتات */
+  try{cropImg=await decodeToBitmap(f);input.value='';openCropModal();return;}
+  catch(err){errs.push('decode:'+(err&&err.name||err));}
   input.value='';
-  if(!buf||!buf.byteLength){showToast('⚠ الجوال ما سمح بقراءة الصورة — إذا كانت في السحابة (Google Photos/OneDrive) نزّلها للجوال أول، أو اختر من "الملفات"');return;}
-  const copy=new File([buf],f.name||'photo.jpg',{type:f.type||'image/jpeg'});
-  loadPhotoFile(copy);
+  console.error('photo read failed',errs,f.name,f.type,f.size);
+  showPhotoFallback(errs);
+}
+/* لو فشلت القراءة من معرض الصور: نعرض زر يفتح مدير الملفات بدل المعرض */
+function showPhotoFallback(errs){
+  document.getElementById('toast')?.setAttribute('hidden','');
+  const old=document.getElementById('photo-fallback');if(old)old.remove();
+  const box=document.createElement('div');
+  box.id='photo-fallback';
+  box.style.cssText='position:fixed;inset:0;z-index:1001;background:rgba(15,12,8,.85);display:flex;align-items:center;justify-content:center;padding:18px';
+  box.innerHTML=`<div style="background:var(--card);border:1.5px solid var(--gold);border-radius:14px;padding:18px;max-width:340px;text-align:center;font-family:var(--ffb);color:var(--sepia)">
+    <div style="font-weight:700;margin-bottom:8px">ما قدرت أقرأ الصورة من المعرض</div>
+    <div style="font-size:.8rem;opacity:.8;margin-bottom:14px">جرّب تختارها من مدير الملفات بدل المعرض</div>
+    <button id="pf-files" style="width:100%;padding:10px;border:none;border-radius:10px;background:var(--gold);color:#fff;font-family:var(--ffb);font-weight:700;margin-bottom:8px">📁 اختيار من الملفات</button>
+    <button id="pf-close" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:10px;background:transparent;color:var(--sepia);font-family:var(--ffb)">إلغاء</button>
+    <div style="font-size:.6rem;opacity:.45;margin-top:10px;direction:ltr">${(errs||[]).join(' · ')}</div>
+  </div>`;
+  document.body.appendChild(box);
+  box.querySelector('#pf-close').onclick=()=>box.remove();
+  box.querySelector('#pf-files').onclick=()=>{
+    /* حقل بدون accept → أندرويد يفتح مدير الملفات بدل منتقي الصور */
+    const alt=document.createElement('input');alt.type='file';alt.style.display='none';
+    alt.onchange=ev=>{box.remove();handleAvatarUpload(ev);alt.remove();};
+    document.body.appendChild(alt);alt.click();
+  };
 }
 /* يقرأ الصورة بأكثر من طريقة — يتحمّل صور الجوال الكبيرة جداً وصيغة HEIC */
 async function sniffType(f){
