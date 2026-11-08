@@ -64,9 +64,11 @@ body{font-family:var(--ffb);background:var(--bg);color:var(--fg);display:flex;fl
 .stage{flex:1;position:relative;overflow:auto;-webkit-overflow-scrolling:touch}
 #canvas{width:100%;min-height:100%;position:relative}
 #lines-svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}
+/* خط الأبناء — ذهبي عادي */
 .line{stroke:var(--gold-lt);stroke-width:1.5;fill:none;opacity:.7;stroke-dasharray:1000;stroke-dashoffset:1000;transition:stroke-dashoffset .5s ease}
 .line.drawn{stroke-dashoffset:0}
-.line-wife{stroke:var(--rose);stroke-dasharray:5 3;opacity:.6}
+/* خط الزوجات — وردي متقطع واضح مختلف */
+.line-wife{stroke:var(--rose);stroke-width:2.5;stroke-dasharray:6 4;opacity:.75}
 .node{position:absolute;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;transition:opacity .35s,transform .35s;user-select:none}
 .node.hidden{opacity:0;pointer-events:none;transform:translate(-50%,-50%) scale(.4)}
 .node.visible{opacity:1;transform:translate(-50%,-50%) scale(1)}
@@ -216,6 +218,7 @@ textarea.form-input{resize:vertical;min-height:52px}
   <div class="leg"><div class="leg-circle leg-f"></div>أنثى</div>
   <div class="leg"><div class="leg-circle leg-rada" style="border-color:var(--blue)"></div>رضاعة ذكر</div>
   <div class="leg"><div class="leg-circle leg-rada" style="border-color:var(--rose)"></div>رضاعة أنثى</div>
+  <div class="leg"><div style="width:22px;height:3px;background:var(--rose);border-radius:2px;opacity:.8;border-top:2px dashed var(--rose)"></div>زوجة</div>
 </div>
 
 <!-- TAB 1 -->
@@ -355,8 +358,8 @@ let FAM = {
   jawhar2_l:{name:'الجوهرة',sex:'f',par:'layla',children:[]},
   fuad_l:{name:'فؤاد',sex:'m',par:'layla',children:[]},
 
-  /* ── بشرى (رضاعة؟ — منفصلة في PDF) ── */
-  bushra:{name:'بشرى',sex:'f',rada:true,par:'zamil',bio:'رضاعة',children:[]},
+  /* ── بشرى — ابنة زامل عادية (من PDF) ── */
+  bushra:{name:'بشرى',sex:'f',par:'zamil',children:[]},
 };
 
 function loadData(){try{const s=localStorage.getItem('fam_data');if(s)FAM=JSON.parse(s)}catch(e){}}
@@ -454,24 +457,33 @@ function createNode(id){
 
 function placeNodes(ids,parentId){
   const {w,h}=getSize();const n=ids.length;
-  const mobile=w<520;
+  const mobile=w<600;
+  /* حجم العقدة + هامش جانبي آمن */
+  const NODE_W=74; /* عرض الكارد تقريباً */
+  const SIDE_PAD=NODE_W/2+8; /* لا تلتصق بالجدار */
   ids.forEach((id,i)=>{
     const el=nodeEls[id]||createNode(id);
     let x,y;
     if(!parentId){x=w/2;y=h/2;}
-    else if(mobile && n>4){
-      /* جوال: تدرج — عمودان متناوبان (يمين/يسار) */
+    else if(mobile && n>3){
+      /* جوال: عمودان متناوبان مع هامش آمن */
       const col=i%2;
       const row=Math.floor(i/2);
       const parEl=nodeEls[parentId];let parY=h*0.17;
       if(parEl){const pr=parEl.getBoundingClientRect(),sr=stage.getBoundingClientRect();parY=pr.top+pr.height/2-sr.top}
-      const colX=w*0.26;
-      x=col===0?w/2+colX:w/2-colX;
-      y=parY+120+row*100;
+      /* مسافة بين العمودين = 42% من عرض الشاشة، محدودة بالهامش */
+      const colOffset=Math.min(w*0.22, w/2-SIDE_PAD);
+      x=col===0?w/2+colOffset:w/2-colOffset;
+      y=parY+130+row*105;
     } else {
-      const totalSpan=Math.min(n*105,w*0.88);
+      /* أفقي: نوزع مع هامش آمن من الجدران */
+      const usable=w-2*SIDE_PAD;
+      const totalSpan=Math.min(n*95,usable);
       const spacing=n>1?totalSpan/(n-1):0;
-      x=n===1?w/2:(w/2-totalSpan/2)+i*spacing;
+      x=n===1?w/2:(SIDE_PAD+totalSpan/2 - totalSpan/2)+SIDE_PAD+i*spacing;
+      /* إذا عقدة واحدة أو عدد قليل — تمركز صحيح */
+      if(n===1) x=w/2;
+      else x=SIDE_PAD+(usable-totalSpan)/2+i*spacing;
       const parEl=nodeEls[parentId];let parY=h*0.2;
       if(parEl){const pr=parEl.getBoundingClientRect(),sr=stage.getBoundingClientRect();parY=pr.top+pr.height/2-sr.top}
       y=parY+160;if(y>h*0.82)y=parY-160;
@@ -479,8 +491,7 @@ function placeNodes(ids,parentId){
     el.style.left=x+'px';el.style.top=y+'px';
     setTimeout(()=>{
       el.classList.remove('hidden');el.classList.add('visible');
-      /* expand canvas height for mobile scroll */
-      const needed=y+120;
+      const needed=y+130;
       if(parseInt(canvas.style.height||0)<needed)canvas.style.height=needed+'px';
     },20+i*25);
   });
