@@ -202,6 +202,7 @@ textarea.form-input{resize:vertical;min-height:52px}
 
 .toast{position:fixed;bottom:14px;left:50%;transform:translateX(-50%);background:#2D6A2D;color:#fff;padding:8px 18px;border-radius:10px;font-family:var(--ffb);font-size:.8rem;font-weight:600;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,.3)}
 </style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 </head>
 <body>
 
@@ -460,8 +461,63 @@ let FAM = {
 };
 
 function loadData(){try{const s=localStorage.getItem('fam_data');if(s)FAM=JSON.parse(s)}catch(e){}}
-function saveData(){try{localStorage.setItem('fam_data',JSON.stringify(FAM))}catch(e){}}
 loadData();
+
+/* ══ السحابة: Supabase — كل البيانات مشتركة بين الكل وتتحدث مباشرة ══ */
+const SB_URL='https://thzczmcuybqrvcxgfzny.supabase.co';
+const SB_KEY='sb_publishable_HCoYRY02NYDPochgwM9QwA_h8Oe3rs4';
+let sb=null;try{sb=window.supabase.createClient(SB_URL,SB_KEY)}catch(e){console.error('supabase init',e)}
+let cloudIds=new Set();     /* الأعضاء الموجودين في السحابة */
+let lastOwnSave=0;          /* لتجاهل إشعار التحديث الناتج عن حفظنا نحن */
+
+function saveData(){
+  try{localStorage.setItem('fam_data',JSON.stringify(FAM))}catch(e){}
+  pushToCloud();
+}
+async function pushToCloud(){
+  if(!sb)return;
+  lastOwnSave=Date.now();
+  const rows=Object.keys(FAM).map(id=>({id,data:FAM[id]}));
+  const {error}=await sb.from('members').upsert(rows,{onConflict:'id'});
+  if(error){console.error('cloud save',error);showToast('⚠ ما انحفظ في السحابة — تأكد من الإنترنت');return;}
+  const gone=[...cloudIds].filter(id=>!FAM[id]);
+  if(gone.length){const r=await sb.from('members').delete().in('id',gone);if(r.error)console.error('cloud delete',r.error);}
+  cloudIds=new Set(Object.keys(FAM));
+  lastOwnSave=Date.now();
+}
+/* يعيد رسم الشاشة الحالية بعد وصول بيانات جديدة */
+function rerenderCurrent(){
+  if(activeTab!=='drill'){ftBuilt=false;return;}
+  if(!document.getElementById('info-popup').classList.contains('hidden'))return; /* لا نقاطع التعديل */
+  const cur=history[history.length-1];
+  const exists=cur&&(cur.startsWith?.('sp:')?FAM[cur.slice(3)]:FAM[cur]);
+  if(!exists){showRoot();return;}
+  history.pop();openEntry(cur);
+}
+async function pullFromCloud(){
+  if(!sb)return;
+  const {data,error}=await sb.from('members').select('id,data');
+  if(error){console.error('cloud load',error);return;}
+  if(!data.length){
+    /* أول مرة: السحابة فاضية — ارفع البيانات الموجودة */
+    if(Object.keys(FAM).length>1){await pushToCloud();showToast('✓ تم رفع بيانات العائلة للسحابة');}
+    return;
+  }
+  const next={};data.forEach(r=>next[r.id]=r.data);
+  FAM=next;cloudIds=new Set(Object.keys(FAM));
+  try{localStorage.setItem('fam_data',JSON.stringify(FAM))}catch(e){}
+  rerenderCurrent();
+}
+function startCloud(){
+  if(!sb)return;
+  pullFromCloud();
+  let t=null;
+  sb.channel('members-live')
+    .on('postgres_changes',{event:'*',schema:'public',table:'members'},()=>{
+      if(Date.now()-lastOwnSave<3000)return;
+      clearTimeout(t);t=setTimeout(pullFromCloud,400);
+    }).subscribe();
+}
 
 function toggleNasab(){
   const txt=document.getElementById('nasab-text');
@@ -1573,6 +1629,7 @@ function closeModal(){closeInfo()} /* للتوافق */
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.removeAttribute('hidden');setTimeout(()=>t.setAttribute('hidden',''),2800)}
 
 showRoot();
+startCloud();
 </script>
 </body>
 </html>
