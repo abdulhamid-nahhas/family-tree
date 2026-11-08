@@ -70,6 +70,8 @@ body{font-family:var(--ffb);background:var(--bg);color:var(--fg);display:flex;fl
 .line.drawn{stroke-dashoffset:0}
 /* خط الزوجات — وردي متقطع واضح مختلف */
 .line-wife{stroke:var(--rose);stroke-width:2.5;stroke-dasharray:6 4;opacity:.75}
+.line-spouse{stroke:var(--rose);stroke-width:2;stroke-dasharray:6 4;opacity:.75}
+.line-child{stroke:var(--gold-lt);stroke-width:1.5;fill:none;opacity:.85}
 .node{position:absolute;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;transition:opacity .35s,transform .35s;user-select:none}
 .node.hidden{opacity:0;pointer-events:none;transform:translate(-50%,-50%) scale(.4)}
 .node.visible{opacity:1;transform:translate(-50%,-50%) scale(1)}
@@ -239,6 +241,7 @@ textarea.form-input{resize:vertical;min-height:52px}
   <div class="leg"><div class="leg-circle leg-f"></div>أنثى</div>
   <div class="leg"><div class="leg-circle leg-rada" style="border-color:var(--blue)"></div>رضاعة ذكر</div>
   <div class="leg"><div class="leg-circle leg-rada" style="border-color:var(--rose)"></div>رضاعة أنثى</div>
+  <div class="leg"><div style="width:26px;height:0;border-top:2.5px solid var(--gold-lt);opacity:.85"></div>أبناء</div>
   <div class="leg"><div style="width:26px;height:0;border-top:2.5px dashed var(--rose);opacity:.85"></div>زوجة</div>
 </div>
 
@@ -300,17 +303,38 @@ textarea.form-input{resize:vertical;min-height:52px}
         <input id="edit-order" class="info-field-input" type="number" min="1" placeholder="١" style="text-align:center">
       </div>
     </div>
+    <!-- نوع العلاقة -->
+    <div id="row-reltype" style="display:flex;gap:8px;align-items:flex-end">
+      <div class="info-field-row" style="flex:1">
+        <label class="info-field-label">نوع العلاقة</label>
+        <select id="edit-reltype" class="info-field-input" onchange="onRelTypeChange()" style="cursor:pointer">
+          <option value="son">ابن</option>
+          <option value="daughter">ابنة</option>
+          <option value="husband">زوج</option>
+          <option value="wife">زوجة</option>
+        </select>
+      </div>
+      <div id="row-relof" class="info-field-row" style="flex:1;display:none">
+        <label class="info-field-label">لمن؟</label>
+        <input id="edit-relof" class="info-field-input" type="text" placeholder="اسم الأب / الأم">
+      </div>
+    </div>
     <!-- النبذة (مخفي للزوجة) -->
     <div id="row-bio" class="info-field-row">
       <label class="info-field-label">النبذة / السيرة</label>
       <textarea id="edit-bio" class="info-field-input" placeholder="نبذة مختصرة..." style="height:52px;resize:none"></textarea>
     </div>
-    <!-- رضاعة toggle (مخفي للزوجة) -->
-    <div id="row-rada" style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+    <!-- رضاعة + جنس toggles (مخفي للزوجة) -->
+    <div id="row-rada" style="display:flex;align-items:center;gap:14px;margin-bottom:6px;flex-wrap:wrap">
       <label class="info-field-label" style="margin:0;flex-shrink:0">رضاعة</label>
       <button id="rada-toggle" onclick="toggleRada()" style="display:flex;align-items:center;gap:7px;padding:5px 12px;border-radius:20px;border:2px solid var(--border);background:transparent;cursor:pointer;font-family:var(--ffb);font-size:.75rem;color:var(--sepia);transition:all .15s">
         <span id="rada-ring-preview" style="width:16px;height:16px;border-radius:50%;border:2.5px solid var(--blue);flex-shrink:0;display:inline-block"></span>
         <span id="rada-label">لا</span>
+      </button>
+      <label class="info-field-label" style="margin:0;flex-shrink:0">الجنس</label>
+      <button id="sex-toggle" onclick="toggleSex()" style="display:flex;align-items:center;gap:7px;padding:5px 12px;border-radius:20px;border:2px solid var(--border);background:transparent;cursor:pointer;font-family:var(--ffb);font-size:.75rem;color:var(--sepia);transition:all .15s">
+        <span id="sex-ring-preview" style="width:16px;height:16px;border-radius:50%;border:2.5px solid var(--blue);flex-shrink:0;display:inline-block"></span>
+        <span id="sex-label">ذكر</span>
       </button>
     </div>
     <!-- صف: الميلاد + العمر + الوفاة -->
@@ -731,13 +755,17 @@ function goBack(){
 
 function drawLine(a,b,isWife=false){
   const aEl=nodeEls[a],bEl=nodeEls[b];if(!aEl||!bEl)return;
-  /* نستخدم style.left/top (مركز العقدة) بدل getBoundingClientRect لتجنب خطأ الـ scroll */
   const fx=parseFloat(aEl.style.left),fy=parseFloat(aEl.style.top);
   const tx=parseFloat(bEl.style.left),ty=parseFloat(bEl.style.top);
   const my=(fy+ty)/2;
   const path=document.createElementNS('http://www.w3.org/2000/svg','path');
   path.setAttribute('d',`M${fx},${fy} C${fx},${my} ${tx},${my} ${tx},${ty}`);
-  path.setAttribute('class','line'+(isWife?' line-wife':''));
+  /* نوع الخط: زوج/زوجة → منقط، ابن/ابنة → متصل */
+  const rt=FAM[b]?.relType;
+  let cls='line';
+  if(isWife||rt==='husband'||rt==='wife') cls+=' line-wife';
+  else if(rt==='son'||rt==='daughter') cls+=' line-child';
+  path.setAttribute('class',cls);
   linesSVG.appendChild(path);lineEls.push(path);
   setTimeout(()=>path.classList.add('drawn'),30);
 }
@@ -820,7 +848,18 @@ function openInfoPanel(id){
   /* إعادة ضبط أزرار الجنس */
   selectedSpouseSex=null; selectedChildSex=null;
   editingRada=!!(m.rada);
+  editingSex=m.sex||'m';
   updateRadaUI();
+  updateSexUI();
+  /* نوع العلاقة */
+  const reltypeEl=document.getElementById('edit-reltype');
+  if(reltypeEl){
+    const def=m.role==='wife'?'wife':(m.sex==='f'?'daughter':'son');
+    reltypeEl.value=m.relType||def;
+  }
+  const relofEl=document.getElementById('edit-relof');
+  if(relofEl) relofEl.value=m.relOf||'';
+  onRelTypeChange();
   const deleteBtn=document.getElementById('delete-btn');
   if(deleteBtn) deleteBtn.style.display=(m.role==='root'?'none':'');
 
@@ -1018,11 +1057,46 @@ function filterProfiles(q){
 }
 
 /* ══ EDIT (داخل نافذة ⓘ) ══ */
-let editingId=null,pendingPhoto=null,pendingSpouses={},editingRada=false;
+let editingId=null,pendingPhoto=null,pendingSpouses={},editingRada=false,editingSex='m';
 
 function toggleRada(){
   editingRada=!editingRada;
   updateRadaUI();
+}
+function toggleSex(){
+  editingSex=(editingSex==='m'?'f':'m');
+  updateSexUI();
+  updateRadaUI(); /* أعد رسم رضاعة بالجنس الجديد */
+}
+function updateSexUI(){
+  const btn=document.getElementById('sex-toggle');
+  const ring=document.getElementById('sex-ring-preview');
+  const lbl=document.getElementById('sex-label');
+  if(!btn)return;
+  const isF=(editingSex==='f');
+  const col=isF?'var(--rose)':'var(--blue)';
+  ring.style.borderStyle='solid';
+  ring.style.borderColor=col;
+  /* ذكر: مربع (border-radius:4px)، أنثى: دائرة */
+  ring.style.borderRadius=isF?'50%':'4px';
+  lbl.textContent=isF?'أنثى':'ذكر';
+  btn.style.borderColor=col;
+  btn.style.background=isF?'color-mix(in srgb,var(--rose) 10%,transparent)':'color-mix(in srgb,var(--blue) 10%,transparent)';
+  btn.style.color=col;
+}
+function onRelTypeChange(){
+  const v=document.getElementById('edit-reltype')?.value;
+  const isSpouse=(v==='husband'||v==='wife');
+  const relOfRow=document.getElementById('row-relof');
+  if(relOfRow) relOfRow.style.display=isSpouse?'':'none';
+  if(isSpouse){
+    /* اقتراح تلقائي: اسم الأب/الأم */
+    const parId=FAM[editingId]?.par;
+    const relOfEl=document.getElementById('edit-relof');
+    if(relOfEl&&!relOfEl.value&&parId&&FAM[parId]){
+      relOfEl.value=FAM[parId].short||FAM[parId].name||'';
+    }
+  }
 }
 function updateRadaUI(){
   const btn=document.getElementById('rada-toggle');
@@ -1180,6 +1254,12 @@ function saveEdit(){
   if(death) FAM[editingId].death=death; else delete FAM[editingId].death;
   if(pendingPhoto)FAM[editingId].photo=pendingPhoto;
   if(editingRada) FAM[editingId].rada=true; else delete FAM[editingId].rada;
+  /* جنس وعلاقة */
+  FAM[editingId].sex=editingSex;
+  const reltypeVal=document.getElementById('edit-reltype')?.value;
+  if(reltypeVal) FAM[editingId].relType=reltypeVal;
+  const relofVal=(document.getElementById('edit-relof')?.value||'').trim();
+  if(relofVal) FAM[editingId].relOf=relofVal; else delete FAM[editingId].relOf;
 
   /* تطبيق الزوج/ة المحدد */
   if(selectedSpouseSex){
