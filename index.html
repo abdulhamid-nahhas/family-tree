@@ -131,6 +131,9 @@ body{font-family:var(--ffb);background:var(--bg);color:var(--fg);display:flex;fl
 .info-close-x{width:28px;height:28px;border-radius:50%;background:color-mix(in srgb,var(--sepia) 12%,transparent);border:none;font-size:.85rem;color:var(--sepia);opacity:.7;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:var(--ffb);line-height:1;flex-shrink:0}
 /* حقول التعديل داخل النافذة */
 .info-fields{padding:10px 14px;overflow-y:auto;flex:1}
+.sex-btn{flex:1;padding:6px 0;border-radius:8px;border:2px solid transparent;font-size:.78rem;font-family:var(--ffb);font-weight:700;cursor:pointer;transition:all .15s;opacity:.6;background:color-mix(in srgb,var(--sepia) 8%,transparent);color:var(--sepia)}
+.sex-btn-m.selected{background:color-mix(in srgb,var(--blue) 25%,transparent);border-color:var(--blue);color:var(--blue);opacity:1}
+.sex-btn-f.selected{background:color-mix(in srgb,var(--rose) 25%,transparent);border-color:var(--rose);color:var(--rose);opacity:1}
 .info-field-row{margin-bottom:7px}
 .info-field-label{display:block;font-size:.68rem;font-weight:600;color:var(--sepia);margin-bottom:2px;opacity:.7}
 .info-field-input{width:100%;padding:5px 9px;border-radius:7px;border:1px solid color-mix(in srgb,var(--gold) 38%,transparent);background:var(--sand);color:var(--fg);font-family:var(--ffb);font-size:.78rem}
@@ -318,47 +321,34 @@ textarea.form-input{resize:vertical;min-height:52px}
   <!-- إضافة زوج/ة ومولود -->
   <div id="add-child-section" style="border-top:1px solid var(--border);padding:10px 14px;flex-shrink:0">
     <!-- إضافة زوج/ة -->
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-      <span style="font-size:.7rem;font-weight:700;color:var(--sepia);opacity:.7">إضافة زوج / زوجة</span>
-      <div style="display:flex;gap:6px">
-        <button onclick="quickAddSpouse('f')"
-          style="background:color-mix(in srgb,var(--rose) 15%,transparent);border:1px solid color-mix(in srgb,var(--rose) 40%,transparent);
-                 border-radius:6px;padding:3px 10px;font-size:.72rem;font-family:var(--ffb);color:var(--sepia);cursor:pointer">أنثى</button>
-        <button onclick="quickAddSpouse('m')"
-          style="background:color-mix(in srgb,var(--blue) 15%,transparent);border:1px solid color-mix(in srgb,var(--blue) 40%,transparent);
-                 border-radius:6px;padding:3px 10px;font-size:.72rem;font-family:var(--ffb);color:var(--sepia);cursor:pointer">ذكر</button>
+    <div style="margin-bottom:10px">
+      <div style="font-size:.7rem;font-weight:700;color:var(--sepia);opacity:.7;margin-bottom:5px">إضافة زوج / زوجة</div>
+      <div style="display:flex;gap:8px">
+        <button id="spouse-btn-m" onclick="toggleSpouseSex('m')" class="sex-btn sex-btn-m">ذكر</button>
+        <button id="spouse-btn-f" onclick="toggleSpouseSex('f')" class="sex-btn sex-btn-f">أنثى</button>
       </div>
     </div>
     <!-- إضافة مولود -->
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-      <span style="font-size:.7rem;font-weight:700;color:var(--sepia);opacity:.7">إضافة مولود</span>
-      <button onclick="toggleAddChild()" id="add-child-toggle"
-        style="background:color-mix(in srgb,var(--gold) 15%,transparent);border:1px solid color-mix(in srgb,var(--gold) 40%,transparent);
-               border-radius:6px;padding:3px 10px;font-size:.72rem;font-family:var(--ffb);color:var(--sepia);cursor:pointer">
-        ＋ مولود جديد
-      </button>
-    </div>
-    <div id="add-child-form" style="display:none;background:color-mix(in srgb,var(--gold) 7%,transparent);border-radius:8px;padding:8px 10px">
-      <div class="info-field-row">
-        <label class="info-field-label">الاسم الكامل</label>
-        <input id="new-child-name" class="info-field-input" type="text" placeholder="مثال: محمد">
+    <div>
+      <div style="font-size:.7rem;font-weight:700;color:var(--sepia);opacity:.7;margin-bottom:5px">إضافة مولود</div>
+      <div style="display:flex;gap:8px;margin-bottom:6px">
+        <button id="child-btn-m" onclick="toggleChildSex('m')" class="sex-btn sex-btn-m">طفل</button>
+        <button id="child-btn-f" onclick="toggleChildSex('f')" class="sex-btn sex-btn-f">طفلة</button>
       </div>
-      <div class="info-field-row" style="display:flex;gap:8px">
-        <div style="flex:1">
-          <label class="info-field-label">الجنس</label>
-          <select id="new-child-sex" class="info-field-input">
-            <option value="m">ذكر</option>
-            <option value="f">أنثى</option>
-          </select>
+      <div id="add-child-form" style="display:none;background:color-mix(in srgb,var(--gold) 7%,transparent);border-radius:8px;padding:8px 10px">
+        <div class="info-field-row">
+          <label class="info-field-label">الاسم</label>
+          <input id="new-child-name" class="info-field-input" type="text" placeholder="اسم المولود">
         </div>
-        <div style="flex:1">
+        <div class="info-field-row">
           <label class="info-field-label">تاريخ الميلاد</label>
           <input id="new-child-birth" class="info-field-input" type="text" placeholder="اختياري">
         </div>
-      </div>
-      <div style="display:flex;gap:6px;justify-content:flex-end;margin-top:6px">
-        <button onclick="cancelAddChild()" style="padding:4px 10px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--sepia);font-family:var(--ffb);font-size:.75rem;cursor:pointer;opacity:.7">إلغاء</button>
-        <button onclick="confirmAddChild()" style="padding:4px 12px;border-radius:6px;border:none;background:var(--green);color:#fff;font-family:var(--ffb);font-size:.75rem;font-weight:700;cursor:pointer">✓ إضافة</button>
+        <input type="hidden" id="new-child-sex" value="m">
+        <div style="display:flex;gap:6px;justify-content:flex-end;margin-top:6px">
+          <button onclick="cancelAddChild()" style="padding:4px 10px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--sepia);font-family:var(--ffb);font-size:.75rem;cursor:pointer;opacity:.7">إلغاء</button>
+          <button onclick="confirmAddChild()" style="padding:4px 12px;border-radius:6px;border:none;background:var(--green);color:#fff;font-family:var(--ffb);font-size:.75rem;font-weight:700;cursor:pointer">✓ إضافة</button>
+        </div>
       </div>
     </div>
   </div>
@@ -820,9 +810,11 @@ function openInfoPanel(id){
   document.getElementById('edit-birth').value=m.birth||'';
   document.getElementById('edit-death').value=m.death||'';
   updateAgeDisplay();
-  /* إعادة ضبط نموذج المولود */
+  /* إعادة ضبط أزرار الجنس والفورم */
+  selectedSpouseSex=null; selectedChildSex=null;
+  ['spouse-btn-m','spouse-btn-f','child-btn-m','child-btn-f'].forEach(id=>{document.getElementById(id)?.classList.remove('selected')});
   const cf=document.getElementById('add-child-form');
-  if(cf){cf.style.display='none';const tb=document.getElementById('add-child-toggle');if(tb)tb.textContent='＋ مولود جديد';}
+  if(cf){cf.style.display='none';}
   const p=document.getElementById('info-popup');
   p.classList.remove('hidden');
 }
@@ -1014,9 +1006,43 @@ function saveEdit(){
   closeInfo();showToast('✓ تم حفظ التعديل');
 }
 
+/* ── أزرار الجنس toggle ── */
+let selectedSpouseSex=null, selectedChildSex=null;
+
+function toggleSpouseSex(sex){
+  if(selectedSpouseSex===sex){
+    /* إلغاء التحديد */
+    selectedSpouseSex=null;
+    document.getElementById('spouse-btn-m').classList.remove('selected');
+    document.getElementById('spouse-btn-f').classList.remove('selected');
+  } else {
+    selectedSpouseSex=sex;
+    document.getElementById('spouse-btn-m').classList.toggle('selected', sex==='m');
+    document.getElementById('spouse-btn-f').classList.toggle('selected', sex==='f');
+  }
+}
+
+function toggleChildSex(sex){
+  const form=document.getElementById('add-child-form');
+  if(selectedChildSex===sex){
+    /* إلغاء التحديد وإخفاء الفورم */
+    selectedChildSex=null;
+    document.getElementById('child-btn-m').classList.remove('selected');
+    document.getElementById('child-btn-f').classList.remove('selected');
+    form.style.display='none';
+  } else {
+    selectedChildSex=sex;
+    document.getElementById('child-btn-m').classList.toggle('selected', sex==='m');
+    document.getElementById('child-btn-f').classList.toggle('selected', sex==='f');
+    document.getElementById('new-child-sex').value=sex;
+    form.style.display='block';
+    document.getElementById('new-child-name').focus();
+  }
+}
+
 /* ── إضافة زوج/ة (تُعلَّق حتى الحفظ) ── */
 function quickAddSpouse(sex){
-  if(!editingId)return;
+  if(!editingId||!sex)return;
   const pid=editingId;
   const spId='sp_'+pid+'_'+Date.now();
   const spData={name:(sex==='f'?'زوجة جديدة':'زوج جديد'),sex,role:'wife',par:pid,children:[],photo:null};
@@ -1026,13 +1052,11 @@ function quickAddSpouse(sex){
 }
 
 /* ── إضافة مولود من نافذة المعلومات ── */
-function toggleAddChild(){
-  const form=document.getElementById('add-child-form');
-  const show=form.style.display==='none';
-  form.style.display=show?'block':'none';
-  if(show){document.getElementById('new-child-name').focus();}
-}
+function toggleAddChild(){/* لم يعد يُستخدم — استُبدل بـ toggleChildSex */}
 function cancelAddChild(){
+  selectedChildSex=null;
+  document.getElementById('child-btn-m').classList.remove('selected');
+  document.getElementById('child-btn-f').classList.remove('selected');
   document.getElementById('add-child-form').style.display='none';
   document.getElementById('new-child-name').value='';
   document.getElementById('new-child-birth').value='';
