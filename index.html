@@ -811,6 +811,14 @@ function kidsOfCouple(husbandId,wifeId){
   return fromH.concat(fromW);
 }
 
+/* كل زوجات الشخص: المسجلات في spouseIds أو ضمن children بدور زوجة */
+function wivesOf(id){
+  const m=FAM[id]||{};
+  const a=(m.spouseIds||[]).filter(x=>FAM[x]);
+  const b=(m.children||[]).filter(x=>FAM[x]&&FAM[x].role==='wife');
+  return [...new Set([...a,...b])].sort((x,y)=>(FAM[x]?.order??9999)-(FAM[y]?.order??9999));
+}
+
 function showSpouseView(spId){
   const sp=FAM[spId];
   /* الزوج: من par، أو من الشخص اللي الزوجة مسجلة عنده */
@@ -854,7 +862,7 @@ function onNodeClick(id){
   const m=FAM[id];if(!m)return;
   /* الزوجات والأزواج (role=wife) لا يُفتح لهم view مستقل — نتجاهل الضغط */
   if(m.role==='wife'){showSpouseView(id);return;}
-  const kids=sortedChildren(id);
+  const kids=wivesOf(id).length>=2?wivesOf(id):sortedChildren(id);
   if(kids.length>0 && history[history.length-1]!==id){
     expandNode(id);
   } else if(history[history.length-1]!==id){
@@ -870,7 +878,10 @@ function onNodeClick(id){
 }
 
 function expandNode(id){
-  const kids=sortedChildren(id);if(!kids.length)return;
+  const ws=wivesOf(id);
+  const multi=ws.length>=2;
+  /* عنده أكثر من زوجة: تطلع زوجاته فقط ويختفي الأبناء لين تختار زوجة */
+  const kids=multi?ws:sortedChildren(id);if(!kids.length)return;
   /* لا تكرر نفس العقدة في التاريخ */
   if(history[history.length-1]===id)return;
   history.push(id);hideAll();
@@ -880,8 +891,8 @@ function expandNode(id){
   nodeEls[id].classList.remove('hidden');nodeEls[id].classList.add('visible');
   kids.forEach(kid=>createNode(kid));placeNodes(kids,id);
   setTimeout(()=>{
-    kids.forEach(kid=>drawLine(id,kid,FAM[kid]?.role==='wife'));
-    showSpouseFor(id);
+    kids.forEach(kid=>drawLine(id,kid,multi||FAM[kid]?.role==='wife'));
+    if(!multi) showSpouseFor(id);
   },150);
   backBtn.classList.remove('hidden');
 }
@@ -889,7 +900,7 @@ function expandNode(id){
 /* يفتح شاشة محفوظة في السجل كما كانت */
 function openEntry(e){
   if(typeof e==='string'&&e.startsWith('sp:')){showSpouseView(e.slice(3));return;}
-  if(sortedChildren(e).length) expandNode(e); else onNodeClick(e);
+  if(sortedChildren(e).length||wivesOf(e).length>=2) expandNode(e); else onNodeClick(e);
 }
 /* رجوع: يرجع للشاشة اللي قبلها بالضبط */
 function goBack(){
