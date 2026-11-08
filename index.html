@@ -577,34 +577,31 @@ function createNode(id){
 
 function placeNodes(ids,parentId){
   const {w,h}=getSize();const n=ids.length;
-  /* هامش جانبي: نصف عرض العقدة */
   const SIDE_PAD=45;
+  /* RTL: نعكس ترتيب المواضع — الأول (i=0) يأخذ أقصى اليمين */
   ids.forEach((id,i)=>{
     const el=nodeEls[id]||createNode(id);
     let x,y;
+    const iRTL=n-1-i; /* الترتيب المعكوس للموضع الأفقي */
 
-    /* موقع الأب: نأخذ style.top مباشرة (مركز العقدة) */
     const parEl=parentId?nodeEls[parentId]:null;
     const parY=parEl?parseFloat(parEl.style.top):h*0.17;
 
     if(!parentId){
       x=w/2; y=h/2;
     } else if(w<540){
-      /* جوال ضيق: عمودان */
+      /* جوال: عمودان، الأول يمين */
       const col=i%2; const row=Math.floor(i/2);
       const colGap=Math.min(w*0.26, w/2-SIDE_PAD-10);
-      x=w/2+(col===0?-colGap:colGap);
+      /* col=0 → يمين، col=1 → يسار */
+      x=w/2+(col===0?colGap:-colGap);
       y=parY+135+row*110;
     } else {
-      /* شاشة عريضة: أفقي دائماً */
-      /* نوزع على عرض الكانفاس الكامل */
       const usable=w-2*SIDE_PAD;
-      /* مسافة بين العقد: إذا كثيرة تتضيق لكن لا تقل عن 70px */
       const gap=Math.max(70, Math.min(110, usable/(n>1?n-1:1)));
       const totalSpan=(n-1)*gap;
       if(n===1) x=w/2;
-      else x=w/2 - totalSpan/2 + i*gap;
-      /* تأكد ما يخرج من الكانفاس */
+      else x=w/2 - totalSpan/2 + iRTL*gap;
       x=Math.max(SIDE_PAD, Math.min(w-SIDE_PAD, x));
       y=parY+160;
     }
@@ -1050,15 +1047,88 @@ function updateRadaUI(){
 function openEditModal(id){openInfoPanel(id)} /* للتوافق مع أزرار قديمة */
 
 function triggerAvatarUpload(){document.getElementById('avatar-file-input').click()}
+
+/* ── Crop دائري ── */
+let cropImg=null,cropDrag=false,cropX=0,cropY=0,cropR=60,cropOX=0,cropOY=0,cropScale=1;
+
 function handleAvatarUpload(e){
   const f=e.target.files[0];if(!f)return;
-  if(f.size>5*1024*1024){showToast('الصورة أكبر من 5MB');return}
+  if(f.size>15*1024*1024){showToast('الصورة أكبر من 15MB');return}
   const r=new FileReader();
   r.onload=ev=>{
-    pendingPhoto=ev.target.result;
-    document.getElementById('info-av').innerHTML=`<img src="${ev.target.result}">`;
+    const img=new Image();
+    img.onload=()=>{ cropImg=img; openCropModal(); };
+    img.src=ev.target.result;
   };
   r.readAsDataURL(f);
+  e.target.value='';
+}
+
+function openCropModal(){
+  let modal=document.getElementById('crop-modal');
+  if(!modal){
+    modal=document.createElement('div');
+    modal.id='crop-modal';
+    modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:400;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px';
+    modal.innerHTML=`
+      <div style="color:#fff;font-family:var(--ffb);font-size:.85rem;opacity:.8">حرك الصورة لتحديد المنطقة ← زوم</div>
+      <canvas id="crop-canvas" width="260" height="260" style="border-radius:50%;cursor:move;touch-action:none;border:3px solid var(--gold)"></canvas>
+      <input type="range" id="crop-zoom" min="50" max="300" value="100" style="width:200px;accent-color:var(--gold)">
+      <div style="display:flex;gap:12px">
+        <button onclick="applyCrop()" style="padding:8px 24px;border-radius:10px;border:none;background:var(--gold);color:#fff;font-family:var(--ffb);font-size:.85rem;cursor:pointer">✓ تطبيق</button>
+        <button onclick="closeCropModal()" style="padding:8px 24px;border-radius:10px;border:1.5px solid #fff5;background:transparent;color:#fff;font-family:var(--ffb);font-size:.85rem;cursor:pointer">إلغاء</button>
+      </div>`;
+    document.body.appendChild(modal);
+    const cv=modal.querySelector('#crop-canvas');
+    const zm=modal.querySelector('#crop-zoom');
+    zm.addEventListener('input',()=>{cropScale=zm.value/100;drawCrop()});
+    /* سحب بالماوس */
+    cv.addEventListener('mousedown',ev=>{cropDrag=true;cropOX=ev.clientX-cropX;cropOY=ev.clientY-cropY});
+    window.addEventListener('mousemove',ev=>{if(!cropDrag)return;cropX=ev.clientX-cropOX;cropY=ev.clientY-cropOY;drawCrop()});
+    window.addEventListener('mouseup',()=>cropDrag=false);
+    /* سحب باللمس */
+    cv.addEventListener('touchstart',ev=>{const t=ev.touches[0];cropDrag=true;cropOX=t.clientX-cropX;cropOY=t.clientY-cropY},{passive:true});
+    cv.addEventListener('touchmove',ev=>{if(!cropDrag)return;const t=ev.touches[0];cropX=t.clientX-cropOX;cropY=t.clientY-cropOY;drawCrop();ev.preventDefault()},{passive:false});
+    cv.addEventListener('touchend',()=>cropDrag=false);
+  }
+  modal.style.display='flex';
+  /* إعادة تهيئة الموضع */
+  const cv=document.getElementById('crop-canvas');
+  const s=Math.min(cropImg.width,cropImg.height);
+  cropScale=260/s; cropX=(260-cropImg.width*cropScale)/2; cropY=(260-cropImg.height*cropScale)/2;
+  document.getElementById('crop-zoom').value=Math.round(cropScale*100);
+  drawCrop();
+}
+
+function drawCrop(){
+  const cv=document.getElementById('crop-canvas');if(!cv||!cropImg)return;
+  const ctx=cv.getContext('2d');
+  ctx.clearRect(0,0,260,260);
+  ctx.save();
+  ctx.beginPath();ctx.arc(130,130,130,0,Math.PI*2);ctx.clip();
+  ctx.drawImage(cropImg,cropX,cropY,cropImg.width*cropScale,cropImg.height*cropScale);
+  ctx.restore();
+  /* دائرة إرشادية */
+  ctx.strokeStyle='rgba(255,255,255,.4)';ctx.lineWidth=1.5;
+  ctx.beginPath();ctx.arc(130,130,129,0,Math.PI*2);ctx.stroke();
+}
+
+function applyCrop(){
+  const cv=document.getElementById('crop-canvas');if(!cv)return;
+  /* ضغط إلى 200x200 */
+  const out=document.createElement('canvas');out.width=200;out.height=200;
+  const ctx=out.getContext('2d');
+  ctx.beginPath();ctx.arc(100,100,100,0,Math.PI*2);ctx.clip();
+  ctx.drawImage(cv,0,0,260,260,0,0,200,200);
+  const dataUrl=out.toDataURL('image/jpeg',0.82);
+  pendingPhoto=dataUrl;
+  document.getElementById('info-av').innerHTML=`<img src="${dataUrl}">`;
+  closeCropModal();
+}
+
+function closeCropModal(){
+  const m=document.getElementById('crop-modal');
+  if(m) m.style.display='none';
 }
 /* يرتب أبناء شخص حسب order (من لا order له يأتي آخراً بترتيب إضافته) */
 function sortedChildren(id){
