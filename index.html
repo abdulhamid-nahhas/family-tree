@@ -73,31 +73,53 @@ body{font-family:var(--ffb);background:var(--bg);color:var(--fg);display:flex;fl
 .avatar-wrap{position:relative}
 .avatar-ring{width:58px;height:58px;border-radius:50%;border:3px solid var(--blue);overflow:hidden;background:var(--sand-mid);display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.12);transition:box-shadow .2s}
 .avatar-ring.female{border-color:var(--rose)}
-.avatar-ring.rada{border-style:dashed!important;border-color:var(--gold)!important}
+.avatar-ring.rada{border-style:dashed!important}
+.avatar-ring.rada:not(.female){border-color:var(--blue)!important}
+.avatar-ring.rada.female{border-color:var(--rose)!important}
 .avatar-ring.root{width:70px;height:70px;border-width:4px;border-color:var(--sepia)!important}
 .avatar-wrap.root-wrap{width:70px;height:70px}
 .avatar-ring img{width:100%;height:100%;object-fit:cover;border-radius:50%}
 .default-avatar{width:70%;height:70%;opacity:.6}
-.has-children-dot{position:absolute;top:1px;right:-2px;width:12px;height:12px;border-radius:50%;background:var(--green);border:2px solid var(--bg);display:none}
-.has-children .has-children-dot{display:block}
+/* لا نقطة خضراء — حذفت */
 .node-name{font-family:var(--ff);font-size:.8rem;font-weight:700;color:var(--sepia);text-align:center;background:var(--card);border:1px solid var(--border);border-radius:7px;padding:3px 9px;max-width:95px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;box-shadow:0 1px 4px rgba(0,0,0,.07)}
 .node.root .node-name{font-size:.92rem;max-width:115px}
 .node:hover .avatar-ring{box-shadow:0 0 0 3px color-mix(in srgb,var(--gold) 40%,transparent)}
-.node-edit-fab{position:absolute;bottom:-1px;left:-2px;width:20px;height:20px;border-radius:50%;background:var(--gold);border:none;cursor:pointer;display:none;align-items:center;justify-content:center;box-shadow:0 1px 4px rgba(0,0,0,.2)}
-.node:hover .node-edit-fab{display:flex}
-.node-edit-fab svg{width:10px;height:10px;fill:#fff}
+/* زر ⓘ على يمين الصورة */
+.node-info-btn{position:absolute;top:-3px;right:-5px;width:20px;height:20px;border-radius:50%;background:var(--gold);border:none;cursor:pointer;display:none;align-items:center;justify-content:center;box-shadow:0 1px 4px rgba(0,0,0,.2);font-size:11px;color:#fff;font-weight:700;line-height:1}
+.node:hover .node-info-btn{display:flex}
+/* سهم الرجوع على يسار الصورة عند hover */
+.node-back-hint{position:absolute;top:-3px;left:-5px;width:20px;height:20px;border-radius:50%;background:color-mix(in srgb,var(--sepia) 20%,transparent);border:none;cursor:pointer;display:none;align-items:center;justify-content:center;box-shadow:0 1px 4px rgba(0,0,0,.12)}
+.node:hover .node-back-hint{display:flex}
+.node-back-hint svg{width:12px;height:12px;fill:none;stroke:var(--sepia);stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
 .back-btn{position:fixed;bottom:20px;left:16px;background:var(--gold);color:#fff;border:none;border-radius:50%;width:44px;height:44px;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 3px 14px rgba(0,0,0,.25);transition:opacity .3s,transform .3s;z-index:100}
 .back-btn.hidden{opacity:0;pointer-events:none;transform:translateY(8px)}
 .back-btn svg{width:22px;height:22px;fill:none;stroke:#fff;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
-.info-popup{position:fixed;bottom:60px;left:50%;transform:translateX(-50%);background:var(--card);border:1.5px solid var(--gold);border-radius:14px;padding:12px 16px;min-width:210px;max-width:270px;box-shadow:0 8px 28px rgba(0,0,0,.18);font-family:var(--ffb);z-index:200;transition:opacity .2s}
+/* ── نافذة ⓘ المنبثقة (تعرض + تعديل) ── */
+.info-popup{position:fixed;bottom:60px;left:50%;transform:translateX(-50%);background:var(--card);border:1.5px solid var(--gold);border-radius:16px;padding:0;min-width:240px;max-width:290px;box-shadow:0 8px 28px rgba(0,0,0,.22);font-family:var(--ffb);z-index:200;transition:opacity .2s;overflow:hidden;direction:rtl}
 .info-popup.hidden{opacity:0;pointer-events:none}
-.info-name{font-family:var(--ff);font-size:1rem;font-weight:700;color:var(--sepia)}
-.info-role{font-size:.65rem;font-weight:700;color:var(--gold);margin-bottom:5px}
-.info-bio{font-size:.72rem;color:var(--sepia);opacity:.8;line-height:1.6;margin-bottom:8px}
-.info-actions{display:flex;gap:6px;justify-content:flex-end}
-.info-edit-btn{font-size:.7rem;font-weight:700;color:var(--gold);border:1px solid var(--gold);border-radius:6px;padding:3px 10px;background:transparent;cursor:pointer;font-family:var(--ffb)}
-.info-edit-btn:hover{background:var(--gold);color:#fff}
-.info-close{font-size:.7rem;color:var(--sepia);opacity:.5;cursor:pointer;background:none;border:none;font-family:var(--ffb)}
+.info-av-row{display:flex;align-items:center;gap:10px;padding:12px 14px 8px;border-bottom:1px solid var(--border)}
+.info-av{width:48px;height:48px;border-radius:50%;border:2px solid var(--blue);overflow:hidden;background:var(--sand-mid);flex-shrink:0;cursor:pointer}
+.info-av.female{border-color:var(--rose)}
+.info-av.rada-m{border-style:dashed;border-color:var(--blue)}
+.info-av.rada-f{border-style:dashed;border-color:var(--rose)}
+.info-av.root{border-color:var(--sepia);border-width:3px}
+.info-av img,.info-av svg{width:100%;height:100%;object-fit:cover}
+.info-av-hint{font-size:.6rem;color:var(--gold);cursor:pointer;margin-top:3px}
+.info-meta{flex:1}
+.info-name{font-family:var(--ff);font-size:.95rem;font-weight:700;color:var(--sepia)}
+.info-role{font-size:.62rem;font-weight:700;color:var(--gold)}
+.info-close-x{position:absolute;top:8px;left:10px;font-size:.85rem;color:var(--sepia);opacity:.4;cursor:pointer;background:none;border:none;font-family:var(--ffb);line-height:1}
+/* حقول التعديل داخل النافذة */
+.info-fields{padding:10px 14px}
+.info-field-row{margin-bottom:7px}
+.info-field-label{display:block;font-size:.68rem;font-weight:600;color:var(--sepia);margin-bottom:2px;opacity:.7}
+.info-field-input{width:100%;padding:5px 9px;border-radius:7px;border:1px solid color-mix(in srgb,var(--gold) 38%,transparent);background:var(--sand);color:var(--fg);font-family:var(--ffb);font-size:.78rem}
+.info-field-input:focus{outline:none;border-color:var(--gold)}
+select.info-field-input{cursor:pointer}
+textarea.info-field-input{resize:vertical;min-height:46px}
+.info-save-row{display:flex;gap:6px;justify-content:flex-end;padding:0 14px 12px}
+.info-save-btn{padding:5px 14px;border-radius:7px;border:none;background:var(--gold);color:#fff;font-family:var(--ffb);font-size:.78rem;font-weight:700;cursor:pointer}
+.info-cancel-btn{padding:5px 10px;border-radius:7px;border:1px solid var(--border);background:transparent;color:var(--sepia);font-family:var(--ffb);font-size:.78rem;cursor:pointer;opacity:.7}
 
 /* ── FULL TREE TAB ── */
 .full-tree-wrap{flex:1;overflow:hidden;position:relative;background:var(--bg)}
@@ -115,7 +137,9 @@ body{font-family:var(--ffb);background:var(--bg);color:var(--fg);display:flex;fl
 .profile-card:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,.1)}
 .pc-avatar{width:56px;height:56px;border-radius:50%;margin:0 auto 7px;border:3px solid var(--blue);overflow:hidden;background:var(--sand-mid);display:flex;align-items:center;justify-content:center}
 .pc-avatar.female{border-color:var(--rose)}
-.pc-avatar.rada{border-style:dashed;border-color:var(--gold)}
+.pc-avatar.rada{border-style:dashed}
+.pc-avatar.rada-m{border-color:var(--blue)}
+.pc-avatar.rada-f{border-color:var(--rose)}
 .pc-avatar.root{border-color:var(--sepia);border-width:4px}
 .pc-avatar img,.pc-avatar svg{width:100%;height:100%;object-fit:cover}
 .pc-name{font-family:var(--ff);font-size:.8rem;font-weight:700;color:var(--sepia);margin-bottom:1px}
@@ -190,8 +214,8 @@ textarea.form-input{resize:vertical;min-height:52px}
 <div class="legend-bar">
   <div class="leg"><div class="leg-circle leg-m"></div>ذكر</div>
   <div class="leg"><div class="leg-circle leg-f"></div>أنثى</div>
-  <div class="leg"><div class="leg-circle leg-rada"></div>رضاعة</div>
-  <div class="leg"><div class="leg-dot"></div>لديه أبناء</div>
+  <div class="leg"><div class="leg-circle leg-rada" style="border-color:var(--blue)"></div>رضاعة ذكر</div>
+  <div class="leg"><div class="leg-circle leg-rada" style="border-color:var(--rose)"></div>رضاعة أنثى</div>
 </div>
 
 <!-- TAB 1 -->
@@ -220,44 +244,39 @@ textarea.form-input{resize:vertical;min-height:52px}
   <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
 </button>
 
+<!-- نافذة ⓘ المنبثقة (تعرض + تعديل مدمج) -->
 <div class="info-popup hidden" id="info-popup">
-  <div class="info-name" id="info-name"></div>
-  <div class="info-role" id="info-role"></div>
-  <div class="info-bio" id="info-bio"></div>
-  <div class="info-actions">
-    <button class="info-edit-btn" id="info-edit-btn">✏️ تعديل</button>
-    <button class="info-close" onclick="closeInfo()">✕</button>
+  <button class="info-close-x" onclick="closeInfo()">✕</button>
+  <div class="info-av-row">
+    <div class="info-av" id="info-av" onclick="triggerAvatarUpload()"></div>
+    <div class="info-meta">
+      <div class="info-name" id="info-name"></div>
+      <div class="info-role" id="info-role"></div>
+      <div class="info-av-hint" onclick="triggerAvatarUpload()">📷 تغيير الصورة</div>
+    </div>
   </div>
-</div>
-
-<div class="modal-bg" id="edit-modal" hidden onclick="if(event.target===this)closeModal()">
-  <div class="modal-box">
-    <h2 class="modal-title" id="modal-title">تعديل بيانات العضو</h2>
-    <div class="modal-av-row">
-      <div class="modal-av-preview" id="modal-av-preview" onclick="triggerAvatarUpload()"></div>
-      <div>
-        <div style="font-size:.8rem;color:var(--sepia);font-weight:600;margin-bottom:4px">الصورة الشخصية</div>
-        <div class="av-hint" onclick="triggerAvatarUpload()">📷 اضغط لتغيير الصورة</div>
-        <div class="av-note">JPG / PNG — حتى 5MB</div>
-      </div>
+  <input type="file" id="avatar-file-input" accept="image/*" onchange="handleAvatarUpload(event)">
+  <div class="info-fields">
+    <div class="info-field-row">
+      <label class="info-field-label">الاسم</label>
+      <input id="edit-name" class="info-field-input" type="text">
     </div>
-    <input type="file" id="avatar-file-input" accept="image/*" onchange="handleAvatarUpload(event)">
-    <div class="form-row">
-      <label class="form-label">الاسم</label>
-      <input id="edit-name" class="form-input" type="text" placeholder="الاسم الكامل">
+    <div class="info-field-row">
+      <label class="info-field-label">النسب</label>
+      <div id="info-nasab-display" style="font-size:.78rem;color:var(--gold);font-weight:600;padding:4px 0;opacity:.85"></div>
     </div>
-    <div class="form-row">
-      <label class="form-label">النبذة / السيرة</label>
-      <textarea id="edit-bio" class="form-input" placeholder="نبذة مختصرة..."></textarea>
+    <div class="info-field-row">
+      <label class="info-field-label">النبذة / السيرة</label>
+      <textarea id="edit-bio" class="info-field-input" placeholder="نبذة مختصرة..."></textarea>
     </div>
-    <div class="form-row">
-      <label class="form-label">سنة الميلاد (اختياري)</label>
-      <input id="edit-birth" class="form-input" type="text" placeholder="مثال: 1980">
+    <div class="info-field-row">
+      <label class="info-field-label">سنة الميلاد (اختياري)</label>
+      <input id="edit-birth" class="info-field-input" type="text" placeholder="مثال: 1980">
     </div>
-    <div class="modal-actions">
-      <button class="btn-cancel" onclick="closeModal()">إلغاء</button>
-      <button class="btn-save" onclick="saveEdit()">💾 حفظ</button>
-    </div>
+  </div>
+  <div class="info-save-row">
+    <button class="info-cancel-btn" onclick="closeInfo()">إلغاء</button>
+    <button class="info-save-btn" onclick="saveEdit()">💾 حفظ</button>
   </div>
 </div>
 
@@ -381,26 +400,53 @@ let lineEls=[];
 
 function getSize(){return{w:stage.offsetWidth||window.innerWidth,h:stage.offsetHeight||400}}
 
+/* ── حساب النسب التلقائي ── */
+function getNasab(id){
+  const m=FAM[id];
+  if(m.role==='root') return 'الجد الأكبر';
+  if(m.role==='wife') return 'زوجة زامل';
+  if(m.rada) return m.sex==='f'?'رضاعة أنثى':'رضاعة ذكر';
+  const parId=m.par;
+  if(!parId) return '';
+  const par=FAM[parId];
+  if(!par) return '';
+  // "ابن/ابنة" للأب أو الأم المباشر
+  const link=m.sex==='f'?'ابنة':'ابن';
+  if(par.role==='wife') return link+' زامل (من '+par.name.split(' ')[0]+')';
+  if(par.role==='root') return link+' زامل';
+  return link+' '+par.name.split(' ')[0];
+}
+
+/* ── اسم واحد للعرض على الكارد ── */
+function shortName(fullName){
+  return fullName?fullName.split(' ')[0]:''
+}
+
 function createNode(id){
   if(nodeEls[id])return nodeEls[id];
   const m=FAM[id];
-  const hasKids=(m.children||[]).length>0;
   const isRoot=m.role==='root';
   const div=document.createElement('div');
-  div.className='node hidden'+(hasKids?' has-children':'');
+  div.className='node hidden';
   div.dataset.id=id;
   const awrap=document.createElement('div');
   awrap.className='avatar-wrap'+(isRoot?' root-wrap':'');
   const ring=document.createElement('div');
   ring.className='avatar-ring'+(m.sex==='f'?' female':'')+(m.rada?' rada':'')+(isRoot?' root':'');
   ring.innerHTML=avatarHTML(id);
-  const dot=document.createElement('div');dot.className='has-children-dot';
-  const pencil=document.createElement('button');
-  pencil.className='node-edit-fab';pencil.title='تعديل';
-  pencil.innerHTML='<svg viewBox="0 0 20 20"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"/></svg>';
-  pencil.onclick=e=>{e.stopPropagation();openEditModal(id)};
-  awrap.appendChild(ring);awrap.appendChild(dot);awrap.appendChild(pencil);
-  const lbl=document.createElement('div');lbl.className='node-name';lbl.textContent=m.name;
+  /* زر ⓘ على اليمين */
+  const infoBtn=document.createElement('button');
+  infoBtn.className='node-info-btn';infoBtn.title='معلومات وتعديل';
+  infoBtn.textContent='ⓘ';
+  infoBtn.onclick=e=>{e.stopPropagation();openInfoPanel(id)};
+  /* سهم رجوع صغير على اليسار */
+  const backHint=document.createElement('button');
+  backHint.className='node-back-hint';backHint.title='رجوع';
+  backHint.innerHTML='<svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>';
+  backHint.onclick=e=>{e.stopPropagation();goBack()};
+  awrap.appendChild(ring);awrap.appendChild(infoBtn);awrap.appendChild(backHint);
+  /* اسم واحد فقط */
+  const lbl=document.createElement('div');lbl.className='node-name';lbl.textContent=shortName(m.name);
   div.appendChild(awrap);div.appendChild(lbl);
   div.addEventListener('click',e=>{e.stopPropagation();onNodeClick(id)});
   canvas.appendChild(div);nodeEls[id]=div;return div;
@@ -447,10 +493,16 @@ function hideAll(){
 
 function showRoot(){hideAll();history=[];createNode('zamil');placeNodes(['zamil'],null);backBtn.classList.add('hidden');closeInfo()}
 
-function onNodeClick(id){showInfo(id);if((FAM[id].children||[]).length>0)expandNode(id)}
+function onNodeClick(id){
+  openInfoPanel(id);
+  /* لا تعيد الفتح إذا هذه العقدة هي آخر مفتوح */
+  if((FAM[id].children||[]).length>0 && history[history.length-1]!==id)expandNode(id);
+}
 
 function expandNode(id){
   const kids=FAM[id].children||[];if(!kids.length)return;
+  /* لا تكرر نفس العقدة في التاريخ */
+  if(history[history.length-1]===id)return;
   history.push(id);hideAll();
   const {w,h}=getSize();
   createNode(id);
@@ -482,15 +534,27 @@ function drawLine(a,b,isWife=false){
   setTimeout(()=>path.classList.add('drawn'),30);
 }
 
-function showInfo(id){
+function openInfoPanel(id){
   const m=FAM[id];
-  const p=document.getElementById('info-popup');
+  editingId=id;pendingPhoto=null;
+  /* صورة */
+  const avEl=document.getElementById('info-av');
+  avEl.innerHTML=avatarHTML(id);
+  avEl.className='info-av'+(m.rada?(m.sex==='f'?' rada-f':' rada-m'):(m.sex==='f'?' female':''))+(m.role==='root'?' root':'');
+  /* اسم كامل في النافذة */
   document.getElementById('info-name').textContent=m.name;
-  document.getElementById('info-role').textContent=m.role==='root'?'الجد الأكبر':m.role==='wife'?'زوجة':m.rada?'رضاعة':'';
-  document.getElementById('info-bio').textContent=m.bio||'لا توجد نبذة — اضغط تعديل لإضافتها';
-  document.getElementById('info-edit-btn').onclick=()=>openEditModal(id);
+  document.getElementById('info-role').textContent=m.role==='root'?'الجد الأكبر':m.role==='wife'?'زوجة':(m.rada?(m.sex==='f'?'رضاعة أنثى':'رضاعة ذكر'):'');
+  /* حقول التعديل */
+  document.getElementById('edit-name').value=m.name;
+  document.getElementById('edit-bio').value=m.bio||'';
+  document.getElementById('edit-birth').value=m.birth||'';
+  /* النسب التلقائي */
+  document.getElementById('info-nasab-display').textContent=getNasab(id);
+  const p=document.getElementById('info-popup');
   p.classList.remove('hidden');
 }
+/* ── الضغط على العقدة: إذا مفتوحة بالفعل لا تكرر ── */
+function showInfo(id){openInfoPanel(id)}
 function closeInfo(){document.getElementById('info-popup').classList.add('hidden')}
 stage.addEventListener('click',closeInfo);
 
@@ -613,12 +677,12 @@ function buildProfiles(){
     const m=FAM[id];
     const card=document.createElement('div');card.className='profile-card';card.dataset.id=id;
     const avcls='pc-avatar'+(m.sex==='f'?' female':'')+(m.rada?' rada':'')+(m.role==='root'?' root':'');
-    card.innerHTML=`<div class="${avcls}">${avatarHTML(id)}</div>
+    const radaCls=m.rada?(m.sex==='f'?' rada rada-f':' rada rada-m'):'';
+    card.innerHTML=`<div class="${avcls}${radaCls}">${avatarHTML(id)}</div>
       <div class="pc-name">${m.name}</div>
-      <div class="pc-role">${m.role==='root'?'الجد الأكبر':m.role==='wife'?'زوجة':m.rada?'رضاعة':''}</div>
-      <div class="pc-branch">${getBranch(id)}</div>
-      <button class="pc-edit-fab" onclick="event.stopPropagation();openEditModal('${id}')"><svg viewBox="0 0 20 20"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"/></svg></button>`;
-    card.addEventListener('click',()=>{switchTab('drill');setTimeout(()=>{showRoot();onNodeClick(id)},120)});
+      <div class="pc-role">${m.role==='root'?'الجد الأكبر':m.role==='wife'?'زوجة':(m.rada?(m.sex==='f'?'رضاعة أنثى':'رضاعة ذكر'):getNasab(id))}</div>
+      <div class="pc-branch">${getBranch(id)}</div>`;
+    card.addEventListener('click',()=>{switchTab('drill');setTimeout(()=>{showRoot();openInfoPanel(id)},120)});
     grid.appendChild(card);
   });
 }
@@ -630,26 +694,20 @@ function filterProfiles(q){
   });
 }
 
-/* ══ EDIT MODAL ══ */
+/* ══ EDIT (داخل نافذة ⓘ) ══ */
 let editingId=null,pendingPhoto=null;
 
-function openEditModal(id){
-  editingId=id;pendingPhoto=null;
-  const m=FAM[id];
-  document.getElementById('modal-title').textContent='تعديل: '+m.name;
-  document.getElementById('edit-name').value=m.name;
-  document.getElementById('edit-bio').value=m.bio||'';
-  document.getElementById('edit-birth').value=m.birth||'';
-  document.getElementById('modal-av-preview').innerHTML=avatarHTML(id);
-  document.getElementById('edit-modal').removeAttribute('hidden');
-  closeInfo();
-}
+function openEditModal(id){openInfoPanel(id)} /* للتوافق مع أزرار قديمة */
+
 function triggerAvatarUpload(){document.getElementById('avatar-file-input').click()}
 function handleAvatarUpload(e){
   const f=e.target.files[0];if(!f)return;
-  if(f.size>5*1024*1024){alert('الصورة أكبر من 5MB');return}
+  if(f.size>5*1024*1024){showToast('الصورة أكبر من 5MB');return}
   const r=new FileReader();
-  r.onload=ev=>{pendingPhoto=ev.target.result;document.getElementById('modal-av-preview').innerHTML=`<img src="${ev.target.result}">`};
+  r.onload=ev=>{
+    pendingPhoto=ev.target.result;
+    document.getElementById('info-av').innerHTML=`<img src="${ev.target.result}">`;
+  };
   r.readAsDataURL(f);
 }
 function saveEdit(){
@@ -657,23 +715,23 @@ function saveEdit(){
   const name=document.getElementById('edit-name').value.trim();
   const bio=document.getElementById('edit-bio').value.trim();
   const birth=document.getElementById('edit-birth').value.trim();
-  if(!name){alert('الاسم مطلوب');return}
+  if(!name){showToast('الاسم مطلوب');return}
   FAM[editingId].name=name;
   FAM[editingId].bio=bio;
   if(birth)FAM[editingId].birth=birth;
   if(pendingPhoto)FAM[editingId].photo=pendingPhoto;
-  saveData();refreshUI(editingId);closeModal();showToast('✓ تم حفظ التعديل');
+  saveData();refreshUI(editingId);closeInfo();showToast('✓ تم حفظ التعديل');
 }
 function refreshUI(id){
   if(nodeEls[id]){
     const ring=nodeEls[id].querySelector('.avatar-ring');if(ring)ring.innerHTML=avatarHTML(id);
-    const lbl=nodeEls[id].querySelector('.node-name');if(lbl)lbl.textContent=FAM[id].name;
+    const lbl=nodeEls[id].querySelector('.node-name');if(lbl)lbl.textContent=shortName(FAM[id].name);
   }
   const card=document.querySelector(`.profile-card[data-id="${id}"]`);
   if(card){const av=card.querySelector('.pc-avatar');if(av)av.innerHTML=avatarHTML(id);const nm=card.querySelector('.pc-name');if(nm)nm.textContent=FAM[id].name;}
   ftBuilt=false;document.getElementById('full-tree-svg').innerHTML='';
 }
-function closeModal(){document.getElementById('edit-modal').setAttribute('hidden','');editingId=null}
+function closeModal(){closeInfo()} /* للتوافق */
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.removeAttribute('hidden');setTimeout(()=>t.setAttribute('hidden',''),2800)}
 
 showRoot();
