@@ -637,6 +637,7 @@ window.addEventListener('resize',()=>{
     if(!history.length){showRoot();return;}
     /* أعد رسم آخر حالة */
     const cur=history[history.length-1];
+    if(typeof cur==='string'&&cur.startsWith('sp:')){history.pop();openEntry(cur);return;}
     const prevHist=[...history];
     hideAll();
     history=prevHist;
@@ -756,7 +757,7 @@ function showSpouseView(spId){
   const owner=FAM[ownerId];if(!owner)return;
   const husbandId=owner.sex==='f'?spId:ownerId;
   const wifeId=owner.sex==='f'?ownerId:spId;
-  history.push(ownerId);hideAll();
+  history.push('sp:'+spId);hideAll();
   const {w,h}=getSize();
   const DIR=owner.sex==='f'?-1:1;
   const ox=w/2-DIR*52, oy=h*0.17;
@@ -824,12 +825,18 @@ function expandNode(id){
   backBtn.classList.remove('hidden');
 }
 
+/* يفتح شاشة محفوظة في السجل كما كانت */
+function openEntry(e){
+  if(typeof e==='string'&&e.startsWith('sp:')){showSpouseView(e.slice(3));return;}
+  if(sortedChildren(e).length) expandNode(e); else onNodeClick(e);
+}
+/* رجوع: يرجع للشاشة اللي قبلها بالضبط */
 function goBack(){
   closeInfo();
-  if(!history.length){showRoot();return}
+  if(history.length<=1){showRoot();return}
   history.pop();
-  if(!history.length){showRoot();return}
-  const parentId=history[history.length-1];history.pop();expandNode(parentId);
+  const prev=history.pop();
+  openEntry(prev);
 }
 
 function drawLine(a,b,isWife=false){
