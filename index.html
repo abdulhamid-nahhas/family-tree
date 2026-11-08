@@ -26,6 +26,9 @@
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;overflow:hidden}
 body{font-family:var(--ffb);background:var(--bg);color:var(--fg);display:flex;flex-direction:column}
+/* الهيدر والتبويبات يختفون لما تنزل، والمفتاح يبقى ثابت */
+.hdr{transition:margin-top .25s ease}
+body.hdr-hidden .hdr{margin-top:calc(-1 * var(--hdrH,0px))}
 
 .hdr{background:var(--sand);border-bottom:2px solid var(--gold);flex-shrink:0}
 .hdr-stripe{height:4px;background:linear-gradient(90deg,var(--rose),var(--gold),var(--gold-lt),var(--gold),var(--rose))}
@@ -1849,6 +1852,22 @@ function refreshUI(id){
 }
 function closeModal(){closeInfo()} /* للتوافق */
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.removeAttribute('hidden');setTimeout(()=>t.setAttribute('hidden',''),2800)}
+
+/* إخفاء الهيدر عند النزول وإظهاره عند الطلوع */
+(function(){
+  const hdr=document.querySelector('.hdr'),tabs=document.querySelector('.tabs-bar');
+  const setH=()=>document.body.style.setProperty('--hdrH',(hdr.offsetHeight+tabs.offsetHeight)+'px');
+  setH();window.addEventListener('resize',setH);
+  const last=new WeakMap();
+  document.addEventListener('scroll',e=>{
+    const el=e.target===document?document.scrollingElement:e.target;
+    if(!el||el.scrollHeight<=el.clientHeight+60)return;
+    const t=el.scrollTop,prev=last.get(el)||0;last.set(el,t);
+    if(t<20) document.body.classList.remove('hdr-hidden');
+    else if(t>prev+6){setH();document.body.classList.add('hdr-hidden');}
+    else if(t<prev-6) document.body.classList.remove('hdr-hidden');
+  },true);
+})();
 
 showRoot();
 startCloud();
