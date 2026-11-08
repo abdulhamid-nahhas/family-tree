@@ -535,16 +535,7 @@ function createNode(id){
   const ring=document.createElement('div');
   ring.className='avatar-ring'+(m.sex==='f'?' female':'')+(m.rada?' rada':'')+(isRoot?' root':'');
   ring.innerHTML=avatarHTML(id);
-  /* 💍 بادج الزوجة — SVG خاتم لضمان الظهور على Chrome وكل المتصفحات */
-  if(m.role==='wife'){
-    const badge=document.createElement('div');badge.className='wife-badge';
-    badge.innerHTML=`<svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="10" cy="12" r="6" stroke="#C8963A" stroke-width="2.2" fill="none"/>
-      <path d="M6.5 7 L8.5 4 L10 5.5 L11.5 4 L13.5 7" stroke="#C8963A" stroke-width="1.8" stroke-linejoin="round" fill="none"/>
-      <circle cx="10" cy="12" r="2.5" fill="#E0B460" opacity=".7"/>
-    </svg>`;
-    awrap.appendChild(badge);
-  }
+  /* زوجات زامل: الدائرة الوردية كافية للتمييز — لا بادج إضافي */
   /* زر ⓘ على اليمين */
   const infoBtn=document.createElement('button');
   infoBtn.className='node-info-btn';infoBtn.title='معلومات وتعديل';
