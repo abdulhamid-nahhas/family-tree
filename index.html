@@ -112,7 +112,7 @@ body{font-family:var(--ffb);background:var(--bg);color:var(--fg);display:flex;fl
 .node-back-hint svg{width:12px;height:12px;fill:none;stroke:var(--sepia);stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
 /* back-btn removed — back arrow is on the node itself */
 /* ── نافذة ⓘ المنبثقة (تعرض + تعديل) ── */
-.info-popup{position:fixed;bottom:60px;left:50%;transform:translateX(-50%);background:var(--card);border:1.5px solid var(--gold);border-radius:16px;padding:0;min-width:240px;max-width:290px;box-shadow:0 8px 28px rgba(0,0,0,.22);font-family:var(--ffb);z-index:200;transition:opacity .2s;overflow:hidden;direction:rtl}
+.info-popup{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--card);border:1.5px solid var(--gold);border-radius:16px;padding:0;min-width:240px;max-width:310px;width:92vw;max-height:85vh;display:flex;flex-direction:column;box-shadow:0 8px 28px rgba(0,0,0,.22);font-family:var(--ffb);z-index:200;transition:opacity .2s;overflow:hidden;direction:rtl}
 .info-popup.hidden{opacity:0;pointer-events:none}
 .info-av-row{display:flex;align-items:center;gap:10px;padding:12px 14px 8px;border-bottom:1px solid var(--border)}
 .info-av{width:48px;height:48px;border-radius:50%;border:2px solid var(--blue);overflow:hidden;background:var(--sand-mid);flex-shrink:0;cursor:pointer}
@@ -127,7 +127,7 @@ body{font-family:var(--ffb);background:var(--bg);color:var(--fg);display:flex;fl
 .info-role{font-size:.62rem;font-weight:700;color:var(--gold)}
 .info-close-x{position:absolute;top:8px;left:10px;font-size:.85rem;color:var(--sepia);opacity:.4;cursor:pointer;background:none;border:none;font-family:var(--ffb);line-height:1}
 /* حقول التعديل داخل النافذة */
-.info-fields{padding:10px 14px}
+.info-fields{padding:10px 14px;overflow-y:auto;flex:1}
 .info-field-row{margin-bottom:7px}
 .info-field-label{display:block;font-size:.68rem;font-weight:600;color:var(--sepia);margin-bottom:2px;opacity:.7}
 .info-field-input{width:100%;padding:5px 9px;border-radius:7px;border:1px solid color-mix(in srgb,var(--gold) 38%,transparent);background:var(--sand);color:var(--fg);font-family:var(--ffb);font-size:.78rem}
