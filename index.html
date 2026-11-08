@@ -1338,32 +1338,55 @@ let cropImg=null,cropDrag=false,cropX=0,cropY=0,cropOX=0,cropOY=0,cropScale=1,cr
 
 function handleAvatarUpload(e){
   const f=e.target.files[0];if(!f)return;
-  if(f.size>15*1024*1024){showToast('الصورة أكبر من 15MB');return}
+  if(f.size>40*1024*1024){showToast("الصورة أكبر من 40MB");return}
   /* أزل modal قديم لضمان بداية نظيفة */
   const old=document.getElementById('crop-modal');if(old)old.remove();
   e.target.value='';
   loadPhotoFile(f);
 }
-/* يقرأ الصورة — ويحوّل صور الآيفون HEIC إلى JPG تلقائياً */
-async function loadPhotoFile(f){
-  const isHeic=/heic|heif/i.test(f.type)||/\.(heic|heif)$/i.test(f.name);
-  let blob=f;
-  if(isHeic){
-    showToast('⏳ جاري تجهيز الصورة...');
-    try{
-      if(!window.heic2any){
-        await new Promise((ok,no)=>{const sc=document.createElement('script');
-          sc.src='https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js';sc.onload=ok;sc.onerror=no;document.head.appendChild(sc);});
-      }
-      const out=await window.heic2any({blob:f,toType:'image/jpeg',quality:.9});
-      blob=Array.isArray(out)?out[0]:out;
-    }catch(err){console.error('heic',err);}
+/* يقرأ الصورة بأكثر من طريقة — يتحمّل صور الجوال الكبيرة جداً وصيغة HEIC */
+async function sniffType(f){
+  try{
+    const b=new Uint8Array(await f.slice(0,16).arrayBuffer());
+    if(b[0]===0xFF&&b[1]===0xD8)return 'jpeg';
+    if(b[0]===0x89&&b[1]===0x50)return 'png';
+    if(b[0]===0x52&&b[1]===0x49&&b[8]===0x57)return 'webp';
+    const ftyp=String.fromCharCode(...b.slice(4,12));
+    if(ftyp.startsWith('ftyp')&&/hei|hev|mif1|msf1/.test(ftyp))return 'heic';
+    if(ftyp.startsWith('ftyp')&&/avif/.test(ftyp))return 'avif';
+  }catch(e){}
+  return 'unknown';
+}
+async function decodeToBitmap(blob){
+  /* نصغّر الصورة أثناء فك ضغطها — صور الجوال 50–200 ميغابكسل تفشل بدون هذا */
+  try{return await createImageBitmap(blob,{resizeWidth:1600,resizeQuality:'high',imageOrientation:'from-image'});}catch(e){}
+  try{return await createImageBitmap(blob);}catch(e){}
+  return await new Promise((ok,no)=>{
+    const url=URL.createObjectURL(blob);const img=new Image();
+    img.onload=()=>ok(img);img.onerror=()=>{URL.revokeObjectURL(url);no(new Error('img decode'));};
+    img.src=url;
+  });
+}
+async function loadHeic(f){
+  if(!window.heic2any){
+    await new Promise((ok,no)=>{const sc=document.createElement('script');
+      sc.src='https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js';sc.onload=ok;sc.onerror=no;document.head.appendChild(sc);});
   }
-  const url=URL.createObjectURL(blob);
-  const img=new Image();
-  img.onload=()=>{cropImg=img;openCropModal();};
-  img.onerror=()=>{URL.revokeObjectURL(url);showToast('⚠ ما قدرت أفتح الصورة — جرّب صورة JPG أو PNG');};
-  img.src=url;
+  const out=await window.heic2any({blob:f,toType:'image/jpeg',quality:.9});
+  return Array.isArray(out)?out[0]:out;
+}
+async function loadPhotoFile(f){
+  showToast('⏳ جاري تجهيز الصورة...');
+  const kind=await sniffType(f);
+  let blob=f;
+  try{
+    if(kind==='heic'||/heic|heif/i.test(f.type)) blob=await loadHeic(f);
+    cropImg=await decodeToBitmap(blob);
+    openCropModal();
+  }catch(err){
+    console.error('photo',err,f.type,f.size,kind);
+    showToast('⚠ ما قدرت أفتح الصورة ('+(kind!=='unknown'?kind:(f.type||'نوع غير معروف'))+'، '+(f.size/1048576).toFixed(1)+'MB)');
+  }
 }
 
 function openCropModal(){
