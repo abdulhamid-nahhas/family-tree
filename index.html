@@ -761,8 +761,8 @@ function showRoot(){hideAll();history=[];createNode('zamil');placeNodes(['zamil'
 function onNodeClick(id){
   /* الضغط على الكارد: يفتح الأبناء أو يعرض الشخص مع زوجاته */
   const m=FAM[id];if(!m)return;
-  /* الزوجات والأزواج (role=wife) لا يُفتح لهم view مستقل — فقط info panel */
-  if(m.role==='wife'){openInfoPanel(id);return;}
+  /* الزوجات والأزواج (role=wife) لا يُفتح لهم view مستقل — نتجاهل الضغط */
+  if(m.role==='wife'){return;}
   const kids=sortedChildren(id);
   if(kids.length>0 && history[history.length-1]!==id){
     expandNode(id);
