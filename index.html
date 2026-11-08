@@ -110,11 +110,11 @@ body{font-family:var(--ffb);background:var(--bg);color:var(--fg);display:flex;fl
   font-weight:700;line-height:1;padding:1px 5px;border-radius:5px;min-width:16px;
   text-align:center;pointer-events:none;white-space:nowrap;opacity:.9;z-index:2}
 /* زر ⓘ على يمين الصورة */
-.node-info-btn{position:absolute;top:-3px;right:-5px;width:20px;height:20px;border-radius:50%;background:var(--gold);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 4px rgba(0,0,0,.2);font-size:11px;color:#fff;font-weight:700;line-height:1}
-.node:hover .node-info-btn{display:flex}
+.node-info-btn{position:absolute;top:-3px;right:-5px;width:20px;height:20px;border-radius:50%;background:var(--gold);border:none;cursor:pointer;display:none;align-items:center;justify-content:center;box-shadow:0 1px 4px rgba(0,0,0,.2);font-size:11px;color:#fff;font-weight:700;line-height:1}
+.node.focus .node-info-btn{display:flex}
 /* سهم الرجوع على يسار الصورة عند hover */
 .node-back-hint{position:absolute;top:-3px;left:-5px;width:20px;height:20px;border-radius:50%;background:color-mix(in srgb,var(--sepia) 20%,transparent);border:none;cursor:pointer;display:none;align-items:center;justify-content:center;box-shadow:0 1px 4px rgba(0,0,0,.12)}
-.node.focus .node-back-hint{display:flex}
+.node.focus.has-back .node-back-hint{display:flex}
 .node-back-hint svg{width:12px;height:12px;fill:none;stroke:var(--sepia);stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
 /* back-btn removed — back arrow is on the node itself */
 /* ── نافذة ⓘ المنبثقة (تعرض + تعديل) ── */
@@ -852,8 +852,10 @@ function showSpouseView(spId){
 
 /* الشخص المعروض فوق: يظهر عليه زر الرجوع دايماً */
 function markFocus(id){
-  document.querySelectorAll('.node.focus').forEach(n=>n.classList.remove('focus'));
-  if(id&&nodeEls[id]&&history.length)nodeEls[id].classList.add('focus');
+  document.querySelectorAll('.node.focus').forEach(n=>n.classList.remove('focus','has-back'));
+  if(!id||!nodeEls[id])return;
+  nodeEls[id].classList.add('focus');
+  if(history.length)nodeEls[id].classList.add('has-back');
 }
 
 function hideAll(){
@@ -862,7 +864,7 @@ function hideAll(){
   clearSpouses();
 }
 
-function showRoot(){hideAll();history=[];createNode('zamil');placeNodes(['zamil'],null);backBtn.classList.add('hidden');closeInfo()}
+function showRoot(){hideAll();history=[];createNode('zamil');placeNodes(['zamil'],null);markFocus('zamil');backBtn.classList.add('hidden');closeInfo()}
 
 function onNodeClick(id){
   /* الضغط على الكارد: يفتح الأبناء أو يعرض الشخص مع زوجاته */
