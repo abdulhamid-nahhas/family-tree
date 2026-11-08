@@ -549,7 +549,7 @@ function shortName(fullName,id){
 }
 
 function createNode(id){
-  if(nodeEls[id])return nodeEls[id];
+  if(nodeEls[id]&&nodeEls[id].isConnected)return nodeEls[id];
   const m=FAM[id];
   const isRoot=m.role==='root';
   const div=document.createElement('div');
@@ -699,39 +699,6 @@ function showSpouseFor(id){
     canvas.appendChild(lineH);spouseEls.push(lineH);
   });
 
-  /* كارد "+ زوج/زوجة" فارغ دايماً في آخر الصف */
-  const addIdx=spIds.length;
-  const addX=nx+DIR*OFFSET*(addIdx+1);
-  const addY=ny;
-  /* خط أفقي نحو الكارد الجديد */
-  const lineAdd=document.createElement('div');
-  const lxA=Math.min(nx,addX)+40;const lwA=Math.abs(addX-nx)-80;
-  lineAdd.style.cssText=`position:absolute;top:${addY}px;left:${lxA}px;width:${Math.max(10,lwA)}px;height:0;
-    border-top:2.5px dashed color-mix(in srgb,var(--gold) 40%,transparent);
-    transform:translateY(-50%);pointer-events:none;z-index:1`;
-  canvas.appendChild(lineAdd);spouseEls.push(lineAdd);
-
-  /* الكارد نفسه */
-  const addBtn=document.createElement('div');
-  addBtn.className='node hidden';
-  addBtn.style.left=addX+'px';
-  addBtn.style.top=addY+'px';
-  /* جنس الزوج/الزوجة عكس الشخص */
-  const spouseSex=m.sex==='m'?'f':'m';
-  const spouseLabel=spouseSex==='f'?'زوجة':'زوج';
-  addBtn.innerHTML=`
-    <div style="width:52px;height:52px;border-radius:50%;border:2px dashed var(--gold);
-      background:color-mix(in srgb,var(--gold) 8%,transparent);
-      display:flex;align-items:center;justify-content:center;
-      font-size:1.4rem;color:var(--gold);cursor:pointer;transition:background .2s"
-      onmouseenter="this.style.background='color-mix(in srgb,var(--gold) 18%,transparent)'"
-      onmouseleave="this.style.background='color-mix(in srgb,var(--gold) 8%,transparent)'">+</div>
-    <div style="font-size:.6rem;color:var(--gold);font-weight:700;margin-top:2px">${spouseLabel}</div>`;
-  addBtn.onclick=(e)=>{ e.stopPropagation(); addNewSpouseFor(id,spouseSex); };
-  canvas.appendChild(addBtn);
-  spouseEls.push(addBtn);
-  setTimeout(()=>addBtn.classList.remove('hidden'),50);
-  setTimeout(()=>addBtn.classList.add('visible'),80);
 }
 
 function addNewSpouseFor(ownerId,sex){
@@ -752,6 +719,45 @@ function addNewSpouseFor(ownerId,sex){
   setTimeout(()=>openInfoPanel(spId),200);
 }
 
+/* أبناء زوجة معيّنة: أبناء الزوج اللي أمهم هي، + أبناء مسجلين عليها قديماً.
+   إذا عنده زوجة وحدة: كل أبنائه بدون أم محددة يُحسبون لها */
+function kidsOfCouple(husbandId,wifeId){
+  const h=FAM[husbandId]||{};const w=FAM[wifeId]||{};
+  const oneWife=(h.spouseIds||[]).filter(x=>FAM[x]).length===1;
+  const fromH=sortedChildren(husbandId).filter(k=>FAM[k]&&FAM[k].role!=='wife'&&(FAM[k].mother===wifeId||(oneWife&&!FAM[k].mother)));
+  const fromW=sortedChildren(wifeId).filter(k=>FAM[k]&&!fromH.includes(k));
+  return fromH.concat(fromW);
+}
+
+function showSpouseView(spId){
+  const sp=FAM[spId];const ownerId=sp.par;const owner=FAM[ownerId];if(!owner)return;
+  const husbandId=owner.sex==='f'?spId:ownerId;
+  const wifeId=owner.sex==='f'?ownerId:spId;
+  history.push(ownerId);hideAll();
+  const {w,h}=getSize();
+  const DIR=owner.sex==='f'?-1:1;
+  const ox=w/2-DIR*52, oy=h*0.17;
+  /* صاحب الشجرة */
+  createNode(ownerId);
+  nodeEls[ownerId].style.left=ox+'px';nodeEls[ownerId].style.top=oy+'px';
+  /* الزوج/الزوجة المختارة جنبه */
+  createNode(spId);
+  const sx=ox+DIR*105;
+  nodeEls[spId].style.left=sx+'px';nodeEls[spId].style.top=oy+'px';
+  [ownerId,spId].forEach(i=>{nodeEls[i].classList.remove('hidden');nodeEls[i].classList.add('visible')});
+  const line=document.createElement('div');
+  line.style.cssText=`position:absolute;top:${oy}px;left:${Math.min(ox,sx)+40}px;width:25px;height:0;
+    border-top:2.5px dashed color-mix(in srgb,var(--rose) 70%,transparent);transform:translateY(-50%);pointer-events:none;z-index:1`;
+  canvas.appendChild(line);spouseEls.push(line);
+  /* الأبناء تحت الزوج بخطوط متصلة */
+  const kids=kidsOfCouple(husbandId,wifeId);
+  if(kids.length){
+    kids.forEach(k=>createNode(k));placeNodes(kids,husbandId);
+    setTimeout(()=>kids.forEach(k=>drawLine(husbandId,k,false)),150);
+  }
+  backBtn.classList.remove('hidden');
+}
+
 function hideAll(){
   Object.values(nodeEls).forEach(el=>{el.classList.remove('visible');el.classList.add('hidden')});
   lineEls.forEach(l=>l.remove());lineEls=[];
@@ -764,7 +770,7 @@ function onNodeClick(id){
   /* الضغط على الكارد: يفتح الأبناء أو يعرض الشخص مع زوجاته */
   const m=FAM[id];if(!m)return;
   /* الزوجات والأزواج (role=wife) لا يُفتح لهم view مستقل — نتجاهل الضغط */
-  if(m.role==='wife'){return;}
+  if(m.role==='wife'){showSpouseView(id);return;}
   const kids=sortedChildren(id);
   if(kids.length>0 && history[history.length-1]!==id){
     expandNode(id);
@@ -1474,13 +1480,19 @@ function confirmAddChild(){
   let baseId='child_'+(Date.now()%100000);
   let newId=baseId;let n=2;while(FAM[newId])newId=baseId+'_'+n++;
   /* إضافة للبيانات — short هو اسم البطاقة، name يمكن تعديله لاحقاً من نافذة المعلومات */
-  FAM[newId]={name:shortVal, short:shortVal, sex, par:editingId};
+  /* الأبناء دايماً من الأب: لو أضفت من نافذة زوجة، الابن يتسجل على زوجها وأمه هي */
+  let fatherId=editingId, motherId=null;
+  const ed=FAM[editingId];
+  if(ed.role==='wife' && ed.sex==='f'){fatherId=ed.par;motherId=editingId;}
+  FAM[newId]={name:shortVal, short:shortVal, sex, par:fatherId};
+  if(motherId) FAM[newId].mother=motherId;
   if(birth) FAM[newId].birth=birth;
-  if(!FAM[editingId].children) FAM[editingId].children=[];
-  FAM[editingId].children.push(newId);
+  if(!FAM[fatherId].children) FAM[fatherId].children=[];
+  FAM[fatherId].children.push(newId);
   saveData();
   cancelAddChild();
   showToast('✓ تمت إضافة '+shortVal);
+  if(motherId){history.pop();showSpouseView(motherId);return;}
   /* إذا كنا في عرض هذا الشخص أعد الرسم لإظهار الدائرة الجديدة */
   if(history[history.length-1]===editingId){
     hideAll();
