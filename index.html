@@ -69,8 +69,8 @@ body{font-family:var(--ffb);background:var(--bg);color:var(--fg);display:flex;fl
 .line{stroke:var(--gold-lt);stroke-width:1.5;fill:none;opacity:.7;stroke-dasharray:1000;stroke-dashoffset:1000;transition:stroke-dashoffset .5s ease}
 .line.drawn{stroke-dashoffset:0}
 /* خط الزوجات — وردي متقطع واضح مختلف */
-.line-wife{stroke:var(--rose);stroke-width:2.5;stroke-dasharray:6 4;opacity:.75}
-.line-spouse{stroke:var(--rose);stroke-width:2;stroke-dasharray:6 4;opacity:.75}
+.line-wife{stroke:var(--gold-lt);stroke-width:2.5;stroke-dasharray:6 4;opacity:.75}
+.line-spouse{stroke:var(--gold-lt);stroke-width:2;stroke-dasharray:6 4;opacity:.75}
 .line-child{stroke:var(--gold-lt);stroke-width:1.5;fill:none;opacity:.85}
 /* خط الابنة — ذهبي متصل (مثل الابن) */
 .line-daughter{stroke:var(--gold-lt);stroke-width:1.5;fill:none;opacity:.85}
@@ -85,6 +85,8 @@ body{font-family:var(--ffb);background:var(--bg);color:var(--fg);display:flex;fl
 .avatar-ring.rada.female{border-color:var(--rose)!important}
 .avatar-ring.root{width:70px;height:70px;border-width:4px;border-color:var(--sepia)!important}
 .avatar-wrap.root-wrap{width:70px;height:70px}
+.avatar-wrap.big{width:70px;height:70px}
+.avatar-ring.big{width:70px;height:70px;border-width:4px}
 .avatar-ring img{width:100%;height:100%;object-fit:cover;border-radius:50%}
 .default-avatar{width:70%;height:70%;opacity:.6}
 /* 💍 بادج الزوجة — SVG لضمان ظهوره على كل المتصفحات */
@@ -153,7 +155,7 @@ textarea.info-field-input{resize:vertical;min-height:46px}
 #full-tree-svg{cursor:grab;transition:transform .05s}
 #full-tree-svg:active{cursor:grabbing}
 .ft-line{stroke:var(--gold-lt);stroke-width:1;fill:none;opacity:.6}
-.ft-line-wife{stroke:var(--rose);stroke-dasharray:4 2;opacity:.5}
+.ft-line-wife{stroke:var(--gold-lt);stroke-dasharray:4 2;opacity:.5}
 .ft-line-daughter{stroke:var(--gold-lt);stroke-width:1;fill:none;opacity:.6}
 
 /* ── PROFILES TAB ── */
@@ -244,10 +246,8 @@ textarea.form-input{resize:vertical;min-height:52px}
   <div class="leg"><div class="leg-circle leg-f"></div>أنثى</div>
   <div class="leg"><div class="leg-circle leg-rada" style="border-color:var(--blue)"></div>ابن رضاعة</div>
   <div class="leg"><div class="leg-circle leg-rada" style="border-color:var(--rose)"></div>ابنة رضاعة</div>
-  <div class="leg"><div style="width:26px;height:0;border-top:2.5px solid var(--gold-lt);opacity:.85"></div>ابن</div>
-  <div class="leg"><div style="width:26px;height:0;border-top:2.5px solid var(--gold-lt);opacity:.85"></div>ابنة</div>
-  <div class="leg"><div style="width:26px;height:0;border-top:2.5px solid var(--rose);opacity:.85"></div>زوج</div>
-  <div class="leg"><div style="width:26px;height:0;border-top:2.5px dashed var(--rose);opacity:.85"></div>زوجة</div>
+  <div class="leg"><div style="width:26px;height:0;border-top:2.5px solid var(--gold-lt);opacity:.85"></div>ابن/ـة</div>
+  <div class="leg"><div style="width:26px;height:0;border-top:2.5px dashed var(--gold-lt);opacity:.85"></div>زوج/ـة</div>
 </div>
 
 <!-- TAB 1 -->
@@ -593,7 +593,8 @@ function placeNodes(ids,parentId){
   const SIDE_PAD=45;
   /* RTL: نعكس ترتيب المواضع — الأول (i=0) يأخذ أقصى اليمين */
   ids.forEach((id,i)=>{
-    const el=nodeEls[id]||createNode(id);
+    const el=createNode(id);
+    el.querySelectorAll('.big').forEach(e=>e.classList.remove('big'));
     let x,y;
     const iRTL=n-1-i; /* الترتيب المعكوس للموضع الأفقي */
 
@@ -662,6 +663,30 @@ let spouseEls=[];
 function clearSpouses(){spouseEls.forEach(e=>e.remove());spouseEls=[]}
 
 /* يُظهر الزوجة/الزوجات جانب العقدة كعقد حقيقية قابلة للنقر */
+/* يطابق حجم دائرة الزوج/الزوجة مع صاحبها */
+function matchSize(ownerEl,spEl){
+  const big=!!ownerEl.querySelector('.avatar-ring.root,.avatar-ring.big');
+  spEl.querySelector('.avatar-wrap').classList.toggle('big',big);
+  spEl.querySelector('.avatar-ring').classList.toggle('big',big);
+}
+/* خط منقط ذهبي بين دائرتين — في منتصف الدائرتين بالضبط */
+function spouseLink(aEl,bEl){
+  const line=document.createElement('div');
+  line.style.cssText='position:absolute;height:0;border-top:2.5px dashed var(--gold-lt);opacity:.85;transform:translateY(-50%);pointer-events:none;z-index:1';
+  canvas.appendChild(line);spouseEls.push(line);
+  requestAnimationFrame(()=>{
+    const cr=canvas.getBoundingClientRect();
+    const ra=aEl.querySelector('.avatar-ring').getBoundingClientRect();
+    const rb=bEl.querySelector('.avatar-ring').getBoundingClientRect();
+    const [l,r]=ra.left<rb.left?[ra,rb]:[rb,ra];
+    const GAP=6;
+    line.style.left=(l.right-cr.left+GAP)+'px';
+    line.style.width=Math.max(8,r.left-l.right-2*GAP)+'px';
+    line.style.top=((ra.top+ra.height/2)-cr.top)+'px';
+  });
+  return line;
+}
+
 function showSpouseFor(id){
   const m=FAM[id];
   const nodeEl=nodeEls[id];if(!nodeEl)return;
@@ -690,13 +715,8 @@ function showSpouseFor(id){
     spEl.classList.remove('hidden');spEl.classList.add('visible');
     spouseEls.push(spEl);
 
-    /* خط أفقي متقطع */
-    const lineH=document.createElement('div');
-    const lx=Math.min(nx,spX)+40;const lw=Math.abs(spX-nx)-80;
-    lineH.style.cssText=`position:absolute;top:${ny}px;left:${lx}px;width:${Math.max(10,lw)}px;height:0;
-      border-top:2.5px dashed color-mix(in srgb,var(--rose) 70%,transparent);
-      transform:translateY(-50%);pointer-events:none;z-index:1`;
-    canvas.appendChild(lineH);spouseEls.push(lineH);
+    matchSize(nodeEl,spEl);
+    spouseLink(nodeEl,spEl);
   });
 
 }
@@ -748,10 +768,8 @@ function showSpouseView(spId){
   const sx=ox+DIR*105;
   nodeEls[spId].style.left=sx+'px';nodeEls[spId].style.top=oy+'px';
   [ownerId,spId].forEach(i=>{nodeEls[i].classList.remove('hidden');nodeEls[i].classList.add('visible')});
-  const line=document.createElement('div');
-  line.style.cssText=`position:absolute;top:${oy}px;left:${Math.min(ox,sx)+40}px;width:25px;height:0;
-    border-top:2.5px dashed color-mix(in srgb,var(--rose) 70%,transparent);transform:translateY(-50%);pointer-events:none;z-index:1`;
-  canvas.appendChild(line);spouseEls.push(line);
+  matchSize(nodeEls[ownerId],nodeEls[spId]);
+  spouseLink(nodeEls[ownerId],nodeEls[spId]);
   /* الأبناء تحت الزوج بخطوط متصلة */
   const kids=kidsOfCouple(husbandId,wifeId);
   if(kids.length){
