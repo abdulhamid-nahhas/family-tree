@@ -239,8 +239,8 @@ textarea.form-input{resize:vertical;min-height:52px}
 <div class="legend-bar">
   <div class="leg"><div class="leg-circle leg-m"></div>ذكر</div>
   <div class="leg"><div class="leg-circle leg-f"></div>أنثى</div>
-  <div class="leg"><div class="leg-circle leg-rada" style="border-color:var(--blue)"></div>رضاعة ذكر</div>
-  <div class="leg"><div class="leg-circle leg-rada" style="border-color:var(--rose)"></div>رضاعة أنثى</div>
+  <div class="leg"><div class="leg-circle leg-rada" style="border-color:var(--blue)"></div>ابن رضاعة</div>
+  <div class="leg"><div class="leg-circle leg-rada" style="border-color:var(--rose)"></div>ابنة رضاعة</div>
   <div class="leg"><div style="width:26px;height:0;border-top:2.5px solid var(--gold-lt);opacity:.85"></div>أبناء</div>
   <div class="leg"><div style="width:26px;height:0;border-top:2.5px dashed var(--rose);opacity:.85"></div>زوجة</div>
 </div>
@@ -299,6 +299,8 @@ textarea.form-input{resize:vertical;min-height:52px}
         <select id="edit-reltype" class="info-field-input" onchange="onRelTypeChange()" style="cursor:pointer;padding-right:4px">
           <option value="son">ابن</option>
           <option value="daughter">ابنة</option>
+          <option value="son-rada">ابن رضاعة</option>
+          <option value="daughter-rada">ابنة رضاعة</option>
           <option value="husband">زوج</option>
           <option value="wife">زوجة</option>
         </select>
@@ -842,8 +844,11 @@ function openInfoPanel(id){
   /* نوع العلاقة */
   const reltypeEl=document.getElementById('edit-reltype');
   if(reltypeEl){
-    const def=m.role==='wife'?'wife':(m.sex==='f'?'daughter':'son');
-    reltypeEl.value=m.relType||def;
+    let def=m.role==='wife'?'wife':(m.sex==='f'?'daughter':'son');
+    /* إذا كان رضاعة وليس زوج/زوجة، أضف -rada */
+    let saved=m.relType||def;
+    if(m.rada&&(saved==='son'||saved==='daughter')) saved=saved+'-rada';
+    reltypeEl.value=saved;
   }
   const relofEl=document.getElementById('edit-relof');
   if(relofEl){
@@ -1085,8 +1090,11 @@ function updateSexUI(){
 function onRelTypeChange(){
   const v=document.getElementById('edit-reltype')?.value;
   /* جنس تلقائي من نوع العلاقة */
-  if(v==='son'||v==='husband') editingSex='m';
-  else if(v==='daughter'||v==='wife') editingSex='f';
+  if(v==='son'||v==='son-rada'||v==='husband') editingSex='m';
+  else if(v==='daughter'||v==='daughter-rada'||v==='wife') editingSex='f';
+  /* رضاعة تلقائي */
+  const isRada=(v==='son-rada'||v==='daughter-rada');
+  editingRada=isRada;
   updateRadaUI();
   /* لمن: اقتراح تلقائي لأول مرة */
   const parId=FAM[editingId]?.par;
