@@ -305,6 +305,14 @@ textarea.form-input{resize:vertical;min-height:52px}
       <label class="info-field-label">النبذة / السيرة</label>
       <textarea id="edit-bio" class="info-field-input" placeholder="نبذة مختصرة..." style="height:52px;resize:none"></textarea>
     </div>
+    <!-- رضاعة toggle -->
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+      <label class="info-field-label" style="margin:0;flex-shrink:0">رضاعة</label>
+      <button id="rada-toggle" onclick="toggleRada()" style="display:flex;align-items:center;gap:7px;padding:5px 12px;border-radius:20px;border:2px solid var(--border);background:transparent;cursor:pointer;font-family:var(--ffb);font-size:.75rem;color:var(--sepia);transition:all .15s">
+        <span id="rada-ring-preview" style="width:16px;height:16px;border-radius:50%;border:2.5px solid var(--blue);flex-shrink:0;display:inline-block"></span>
+        <span id="rada-label">لا</span>
+      </button>
+    </div>
     <!-- صف: الميلاد + العمر + الوفاة -->
     <div style="display:flex;gap:8px;align-items:flex-end">
       <div class="info-field-row" style="flex:1">
@@ -817,6 +825,8 @@ function openInfoPanel(id){
   updateAgeDisplay();
   /* إعادة ضبط أزرار الجنس */
   selectedSpouseSex=null; selectedChildSex=null;
+  editingRada=!!(m.rada);
+  updateRadaUI();
   const deleteBtn=document.getElementById('delete-btn');
   if(deleteBtn) deleteBtn.style.display=(m.role==='root'?'none':'');
   ['spouse-btn-m','spouse-btn-f','child-btn-m','child-btn-f'].forEach(id=>{document.getElementById(id)?.classList.remove('selected')});
@@ -1007,7 +1017,36 @@ function filterProfiles(q){
 }
 
 /* ══ EDIT (داخل نافذة ⓘ) ══ */
-let editingId=null,pendingPhoto=null,pendingSpouses={};
+let editingId=null,pendingPhoto=null,pendingSpouses={},editingRada=false;
+
+function toggleRada(){
+  editingRada=!editingRada;
+  updateRadaUI();
+}
+function updateRadaUI(){
+  const btn=document.getElementById('rada-toggle');
+  const ring=document.getElementById('rada-ring-preview');
+  const lbl=document.getElementById('rada-label');
+  if(!btn)return;
+  // تحديد لون الدائرة بناءً على جنس الشخص الحالي
+  const sex=FAM[editingId]?.sex||'m';
+  const col=sex==='f'?'var(--rose)':'var(--blue)';
+  if(editingRada){
+    ring.style.borderStyle='dashed';
+    ring.style.borderColor=col;
+    lbl.textContent='نعم';
+    btn.style.borderColor=col;
+    btn.style.background=sex==='f'?'color-mix(in srgb,var(--rose) 10%,transparent)':'color-mix(in srgb,var(--blue) 10%,transparent)';
+    btn.style.color=col;
+  } else {
+    ring.style.borderStyle='solid';
+    ring.style.borderColor=col;
+    lbl.textContent='لا';
+    btn.style.borderColor='var(--border)';
+    btn.style.background='transparent';
+    btn.style.color='var(--sepia)';
+  }
+}
 
 function openEditModal(id){openInfoPanel(id)} /* للتوافق مع أزرار قديمة */
 
@@ -1041,6 +1080,7 @@ function saveEdit(){
   if(birth) FAM[editingId].birth=birth; else delete FAM[editingId].birth;
   if(death) FAM[editingId].death=death; else delete FAM[editingId].death;
   if(pendingPhoto)FAM[editingId].photo=pendingPhoto;
+  if(editingRada) FAM[editingId].rada=true; else delete FAM[editingId].rada;
   /* تطبيق الزوج/ة المحدد */
   if(selectedSpouseSex){
     const spId='sp_'+editingId+'_'+Date.now();
