@@ -865,17 +865,16 @@ function openInfoPanel(id){
 
   /* إخفاء/إظهار الحقول حسب نوع الشخص */
   const isWife=(m.role==='wife');
-  /* للزوجة: أخفِ صف النوع+الترتيب والرضاعة، أظهر باقي الحقول */
-  const hideForWife=['row-nasab-order','row-rada'];
-  /* للجميع: أخفِ أزرار الإضافة عند الزوجة */
-  const wifeHideIds=[...hideForWife,'add-spouse-row','add-child-row'];
-  /* row-fullname و row-bio: أظهرهما للجميع */
-  ['row-nasab-order','row-rada'].forEach(rid=>{
+  /* للزوجة: أخفِ الرضاعة فقط، أظهر صف النوع+الترتيب */
+  ['row-rada'].forEach(rid=>{
     const el=document.getElementById(rid);
     if(!el)return;
     if(isWife) el.style.display='none';
     else el.style.display='flex';
   });
+  /* صف النوع+الترتيب: يظهر للجميع */
+  const nasabOrderEl=document.getElementById('row-nasab-order');
+  if(nasabOrderEl) nasabOrderEl.style.display='flex';
   ['row-bio','row-fullname'].forEach(rid=>{
     const el=document.getElementById(rid);
     if(el) el.style.display='';
