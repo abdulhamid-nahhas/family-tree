@@ -730,7 +730,10 @@ function kidsOfCouple(husbandId,wifeId){
 }
 
 function showSpouseView(spId){
-  const sp=FAM[spId];const ownerId=sp.par;const owner=FAM[ownerId];if(!owner)return;
+  const sp=FAM[spId];
+  /* الزوج: من par، أو من الشخص اللي الزوجة مسجلة عنده */
+  const ownerId=(sp.par&&FAM[sp.par])?sp.par:Object.keys(FAM).find(k=>(FAM[k].children||[]).includes(spId)||(FAM[k].spouseIds||[]).includes(spId));
+  const owner=FAM[ownerId];if(!owner)return;
   const husbandId=owner.sex==='f'?spId:ownerId;
   const wifeId=owner.sex==='f'?ownerId:spId;
   history.push(ownerId);hideAll();
