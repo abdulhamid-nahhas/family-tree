@@ -316,6 +316,10 @@ textarea.form-input{resize:vertical;min-height:52px}
       <textarea id="edit-bio" class="info-field-input" placeholder="نبذة مختصرة..."></textarea>
     </div>
     <div class="info-field-row">
+      <label class="info-field-label">الترتيب بين الأبناء</label>
+      <input id="edit-order" class="info-field-input" type="number" min="1" placeholder="مثال: 1 للأكبر، 2 للي بعده..." style="width:100%">
+    </div>
+    <div class="info-field-row">
       <label class="info-field-label">تاريخ الميلاد</label>
       <div style="display:flex;gap:6px;align-items:center;flex:1">
         <input id="edit-birth" class="info-field-input" type="text" placeholder="مثال: 1990 أو 1410هـ أو 1990-05-20" style="flex:1" oninput="updateAgeDisplay()">
@@ -641,7 +645,7 @@ window.addEventListener('resize',()=>{
     createNode(cur);
     nodeEls[cur].style.left=w/2+'px';nodeEls[cur].style.top=h*0.17+'px';
     nodeEls[cur].classList.remove('hidden');nodeEls[cur].classList.add('visible');
-    const kids=FAM[cur].children||[];
+    const kids=sortedKids(FAM[cur].children||[]);
     if(kids.length){
       kids.forEach(k=>createNode(k));
       placeNodes(kids,cur);
@@ -729,10 +733,20 @@ function onNodeClick(id){
   }
 }
 
+/* ترتيب الأبناء حسب حقل order، ثم الترتيب الأصلي */
+function sortedKids(ids){
+  return [...ids].sort((a,b)=>{
+    const oa=FAM[a]?.order!=null?FAM[a].order:9999;
+    const ob=FAM[b]?.order!=null?FAM[b].order:9999;
+    if(oa!==ob)return oa-ob;
+    return ids.indexOf(a)-ids.indexOf(b);
+  });
+}
+
 function expandNode(id){
-  const kids=FAM[id].children||[];if(!kids.length)return;
-  /* لا تكرر نفس العقدة في التاريخ */
+  const rawKids=FAM[id].children||[];if(!rawKids.length)return;
   if(history[history.length-1]===id)return;
+  const kids=sortedKids(rawKids);
   history.push(id);hideAll();
   const {w,h}=getSize();
   createNode(id);
@@ -741,8 +755,7 @@ function expandNode(id){
   kids.forEach(kid=>createNode(kid));placeNodes(kids,id);
   setTimeout(()=>{
     kids.forEach(kid=>drawLine(id,kid,FAM[kid]?.role==='wife'));
-    showSpouseFor(id); /* زوجة الأب جانبه */
-    /* زوجات الأبناء: لا تُظهر هنا — تظهر فقط لما تضغط على الابن نفسه */
+    showSpouseFor(id);
   },150);
   backBtn.classList.remove('hidden');
 }
@@ -828,6 +841,7 @@ function openInfoPanel(id){
   /* حقول التعديل */
   document.getElementById('edit-short').value=m.short||shortName(m.name,null)||'';
   document.getElementById('edit-name').value=m.name||'';
+  document.getElementById('edit-order').value=m.order!=null?m.order:'';
   /* النسب: من البيانات المحفوظة أو تلقائي من الموضع */
   document.getElementById('edit-nasab').value=m.nasab||getNasab(id)||'';
   /* الزوج/ة */
@@ -1011,6 +1025,9 @@ function saveEdit(){
   FAM[editingId].short=shortVal;
   FAM[editingId].name=fullName||shortVal;
   if(nasab) FAM[editingId].nasab=nasab; else delete FAM[editingId].nasab;
+  const orderVal=document.getElementById('edit-order').value.trim();
+  if(orderVal!=='') FAM[editingId].order=parseInt(orderVal);
+  else delete FAM[editingId].order;
   FAM[editingId].bio=bio;
   /* التواريخ */
   if(birth) FAM[editingId].birth=birth; else delete FAM[editingId].birth;
@@ -1095,7 +1112,7 @@ function confirmAddChild(){
     nodeEls[editingId].style.top=h*0.17+'px';
     nodeEls[editingId].classList.remove('hidden');
     nodeEls[editingId].classList.add('visible');
-    const kids=FAM[editingId].children||[];
+    const kids=sortedKids(FAM[editingId].children||[]);
     kids.forEach(k=>createNode(k));
     placeNodes(kids,editingId);
     setTimeout(()=>{
