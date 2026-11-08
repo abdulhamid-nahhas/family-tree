@@ -271,14 +271,19 @@ textarea.form-input{resize:vertical;min-height:52px}
     <div class="info-meta">
       <div class="info-name" id="info-name"></div>
       <div class="info-role" id="info-role"></div>
+      <div id="info-age-badge" style="font-size:.65rem;color:var(--gold);font-weight:700;margin-top:2px"></div>
       <div class="info-av-hint" onclick="triggerAvatarUpload()">📷 تغيير الصورة</div>
     </div>
   </div>
   <input type="file" id="avatar-file-input" accept="image/*" onchange="handleAvatarUpload(event)">
   <div class="info-fields">
     <div class="info-field-row">
-      <label class="info-field-label">الاسم</label>
+      <label class="info-field-label">الاسم الكامل</label>
       <input id="edit-name" class="info-field-input" type="text">
+    </div>
+    <div class="info-field-row">
+      <label class="info-field-label">الاسم على البطاقة</label>
+      <input id="edit-display-name" class="info-field-input" type="text" placeholder="اتركه فارغاً لاستخدام الاسم الأول تلقائياً">
     </div>
     <div class="info-field-row">
       <label class="info-field-label">النسب</label>
@@ -289,8 +294,18 @@ textarea.form-input{resize:vertical;min-height:52px}
       <textarea id="edit-bio" class="info-field-input" placeholder="نبذة مختصرة..."></textarea>
     </div>
     <div class="info-field-row">
-      <label class="info-field-label">سنة الميلاد (اختياري)</label>
-      <input id="edit-birth" class="info-field-input" type="text" placeholder="مثال: 1980">
+      <label class="info-field-label">تاريخ الميلاد</label>
+      <div style="display:flex;gap:6px;align-items:center;flex:1">
+        <input id="edit-birth" class="info-field-input" type="text" placeholder="مثال: 1990 أو 1410هـ أو 1990-05-20" style="flex:1" oninput="updateAgeDisplay()">
+        <span id="age-display" style="font-size:.7rem;color:var(--gold);font-weight:700;white-space:nowrap;min-width:48px;text-align:center"></span>
+      </div>
+    </div>
+    <div class="info-field-row">
+      <label class="info-field-label">تاريخ الوفاة</label>
+      <div style="display:flex;gap:6px;align-items:center;flex:1">
+        <input id="edit-death" class="info-field-input" type="text" placeholder="اتركه فارغاً إن كان حياً" style="flex:1" oninput="updateAgeDisplay()">
+        <span id="death-age-display" style="font-size:.7rem;color:var(--rose);font-weight:700;white-space:nowrap;min-width:48px;text-align:center"></span>
+      </div>
     </div>
   </div>
   <div class="info-save-row">
@@ -311,7 +326,7 @@ let FAM = {
   abdulmalik:{name:'عبدالملك',sex:'m',par:'abeer',children:[]},
   yousef:{name:'يوسف',sex:'m',par:'abeer',children:[]},
   racan:{name:'راكان',sex:'m',par:'abeer',rada:true,bio:'رضاعة',children:[]},
-  umkalt:{name:'أم كلثوم',sex:'f',par:'abeer',rada:true,bio:'رضاعة',children:[]},
+  umkalt:{name:'أم كلثوم',sex:'f',par:'abeer',rada:true,bio:'رضاعة',short:'أم كلثوم',children:[]},
   ahmed:{name:'أحمد',sex:'m',par:'abeer',children:[]},
   abdulraouf:{name:'عبدالرؤوف',sex:'m',par:'abeer',children:[]},
   eilaf:{name:'إيلاف',sex:'f',par:'abeer',children:[]},
@@ -464,7 +479,9 @@ function getNasab(id){
 }
 
 /* ── اسم واحد للعرض على الكارد ── */
-function shortName(fullName){
+function shortName(fullName,id){
+  /* إذا عنده حقل short خاص (مثل أم كلثوم) استخدمه */
+  if(id && FAM[id]?.short) return FAM[id].short;
   return fullName?fullName.split(' ')[0]:''
 }
 
@@ -508,7 +525,7 @@ function createNode(id){
   }
   awrap.appendChild(ring);awrap.appendChild(infoBtn);awrap.appendChild(backHint);
   /* اسم واحد فقط */
-  const lbl=document.createElement('div');lbl.className='node-name';lbl.textContent=shortName(m.name);
+  const lbl=document.createElement('div');lbl.className='node-name';lbl.textContent=shortName(m.name,id);
   div.appendChild(awrap);div.appendChild(lbl);
   div.addEventListener('click',e=>{e.stopPropagation();onNodeClick(id)});
   canvas.appendChild(div);nodeEls[id]=div;return div;
@@ -655,6 +672,53 @@ function drawLine(a,b,isWife=false){
   setTimeout(()=>path.classList.add('drawn'),30);
 }
 
+/* ── حساب العمر من تاريخ ميلادي أو هجري ── */
+function parseYear(str){
+  if(!str)return null;
+  str=str.trim();
+  /* هجري: ينتهي بـ هـ أو ه أو H */
+  const hijriMatch=str.match(/^(\d{3,4})\s*[ههH]$/i);
+  if(hijriMatch){
+    const hYear=parseInt(hijriMatch[1]);
+    /* تحويل تقريبي: السنة الهجرية → ميلادية */
+    return Math.round(hYear*0.9702+621.57);
+  }
+  /* ميلادي: نأخذ أول 4 أرقام */
+  const mMatch=str.match(/(\d{4})/);
+  if(mMatch)return parseInt(mMatch[1]);
+  return null;
+}
+
+function calcAge(birthStr,deathStr){
+  const by=parseYear(birthStr);if(!by)return{birth:null,death:null,age:null};
+  const dy=deathStr?parseYear(deathStr):null;
+  const refYear=dy||new Date().getFullYear();
+  return{birth:by,death:dy,age:refYear-by};
+}
+
+function updateAgeDisplay(){
+  const bVal=document.getElementById('edit-birth').value;
+  const dVal=document.getElementById('edit-death').value;
+  const r=calcAge(bVal,dVal);
+  const ageEl=document.getElementById('age-display');
+  const deathEl=document.getElementById('death-age-display');
+  const badge=document.getElementById('info-age-badge');
+  if(r.age!==null && r.age>=0 && r.age<150){
+    if(r.death){
+      ageEl.textContent='';
+      deathEl.textContent='عاش '+r.age+' سنة';
+      if(badge) badge.textContent='⚰ توفي سنة '+r.death+' — عاش '+r.age+' سنة';
+    } else {
+      ageEl.textContent=r.age+' سنة';
+      deathEl.textContent='';
+      if(badge) badge.textContent='🎂 العمر: '+r.age+' سنة';
+    }
+  } else {
+    ageEl.textContent='';deathEl.textContent='';
+    if(badge) badge.textContent='';
+  }
+}
+
 function openInfoPanel(id){
   const m=FAM[id];
   editingId=id;pendingPhoto=null;
@@ -667,10 +731,13 @@ function openInfoPanel(id){
   document.getElementById('info-role').textContent=m.role==='root'?'الجد الأكبر':m.role==='wife'?'زوجة':(m.rada?(m.sex==='f'?'رضاعة أنثى':'رضاعة ذكر'):'');
   /* حقول التعديل */
   document.getElementById('edit-name').value=m.name;
+  document.getElementById('edit-display-name').value=m.short||'';
   document.getElementById('edit-bio').value=m.bio||'';
   document.getElementById('edit-birth').value=m.birth||'';
+  document.getElementById('edit-death').value=m.death||'';
   /* النسب التلقائي */
   document.getElementById('info-nasab-display').textContent=getNasab(id);
+  updateAgeDisplay();
   const p=document.getElementById('info-popup');
   p.classList.remove('hidden');
 }
@@ -834,19 +901,26 @@ function handleAvatarUpload(e){
 function saveEdit(){
   if(!editingId)return;
   const name=document.getElementById('edit-name').value.trim();
+  const dispName=document.getElementById('edit-display-name').value.trim();
   const bio=document.getElementById('edit-bio').value.trim();
   const birth=document.getElementById('edit-birth').value.trim();
+  const death=document.getElementById('edit-death').value.trim();
   if(!name){showToast('الاسم مطلوب');return}
   FAM[editingId].name=name;
   FAM[editingId].bio=bio;
-  if(birth)FAM[editingId].birth=birth;
+  /* الاسم على البطاقة */
+  if(dispName) FAM[editingId].short=dispName;
+  else delete FAM[editingId].short;
+  /* التواريخ */
+  if(birth) FAM[editingId].birth=birth; else delete FAM[editingId].birth;
+  if(death) FAM[editingId].death=death; else delete FAM[editingId].death;
   if(pendingPhoto)FAM[editingId].photo=pendingPhoto;
   saveData();refreshUI(editingId);closeInfo();showToast('✓ تم حفظ التعديل');
 }
 function refreshUI(id){
   if(nodeEls[id]){
     const ring=nodeEls[id].querySelector('.avatar-ring');if(ring)ring.innerHTML=avatarHTML(id);
-    const lbl=nodeEls[id].querySelector('.node-name');if(lbl)lbl.textContent=shortName(FAM[id].name);
+    const lbl=nodeEls[id].querySelector('.node-name');if(lbl)lbl.textContent=shortName(FAM[id].name,id);
   }
   const card=document.querySelector(`.profile-card[data-id="${id}"]`);
   if(card){const av=card.querySelector('.pc-avatar');if(av)av.innerHTML=avatarHTML(id);const nm=card.querySelector('.pc-name');if(nm)nm.textContent=FAM[id].name;}
