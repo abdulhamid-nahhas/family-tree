@@ -1336,13 +1336,23 @@ function triggerAvatarUpload(){document.getElementById('avatar-file-input').clic
 /* ── Crop دائري ── */
 let cropImg=null,cropDrag=false,cropX=0,cropY=0,cropOX=0,cropOY=0,cropScale=1,cropBaseScale=1;
 
-function handleAvatarUpload(e){
-  const f=e.target.files[0];if(!f)return;
-  if(f.size>40*1024*1024){showToast("الصورة أكبر من 40MB");return}
-  /* أزل modal قديم لضمان بداية نظيفة */
+async function handleAvatarUpload(e){
+  const input=e.target;
+  const f=input.files[0];if(!f)return;
+  if(f.size>40*1024*1024){showToast("الصورة أكبر من 40MB");input.value='';return}
   const old=document.getElementById('crop-modal');if(old)old.remove();
-  e.target.value='';
-  loadPhotoFile(f);
+  showToast('⏳ جاري تجهيز الصورة...');
+  /* ننسخ بايتات الصورة للذاكرة أولاً — أندرويد يقفل الملف إذا مسحنا الحقل قبل القراءة */
+  let buf=null;
+  try{buf=await f.arrayBuffer();}
+  catch(err){
+    try{buf=await new Promise((ok,no)=>{const r=new FileReader();r.onload=()=>ok(r.result);r.onerror=()=>no(r.error);r.readAsArrayBuffer(f);});}
+    catch(err2){console.error('read',err,err2);}
+  }
+  input.value='';
+  if(!buf||!buf.byteLength){showToast('⚠ الجوال ما سمح بقراءة الصورة — إذا كانت في السحابة (Google Photos/OneDrive) نزّلها للجوال أول، أو اختر من "الملفات"');return;}
+  const copy=new File([buf],f.name||'photo.jpg',{type:f.type||'image/jpeg'});
+  loadPhotoFile(copy);
 }
 /* يقرأ الصورة بأكثر من طريقة — يتحمّل صور الجوال الكبيرة جداً وصيغة HEIC */
 async function sniffType(f){
@@ -1376,7 +1386,6 @@ async function loadHeic(f){
   return Array.isArray(out)?out[0]:out;
 }
 async function loadPhotoFile(f){
-  showToast('⏳ جاري تجهيز الصورة...');
   const kind=await sniffType(f);
   let blob=f;
   try{
@@ -1401,39 +1410,63 @@ function openCropModal(){
   /* ── إنشاء modal جديد في كل مرة ── */
   const modal=document.createElement('div');
   modal.id='crop-modal';
-  modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:1000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px';
+  modal.style.cssText='position:fixed;inset:0;background:rgba(15,12,8,.96);z-index:1000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px';
   modal.innerHTML=`
-    <div style="color:#fff;font-family:var(--ffb);font-size:.82rem;opacity:.75;text-align:center">حرك الصورة ثم اضغط تطبيق</div>
+    <div style="color:#fff;font-family:var(--ffb);font-size:.82rem;opacity:.75;text-align:center">اسحب الصورة بإصبع — وقرّب أو بعّد بإصبعين</div>
     <canvas id="crop-canvas" width="${CS}" height="${CS}" style="border-radius:50%;cursor:grab;touch-action:none;border:3px solid var(--gold);display:block"></canvas>
-    <div style="display:flex;align-items:center;gap:10px">
-      <span style="color:#fff;opacity:.6;font-size:.75rem">−</span>
-      <input id="crop-zoom" type="range" min="100" max="400" value="100" style="width:180px;accent-color:var(--gold)">
-      <span style="color:#fff;opacity:.6;font-size:.75rem">+</span>
-    </div>
     <div style="display:flex;gap:12px">
       <button id="crop-apply-btn" style="padding:9px 28px;border-radius:10px;border:none;background:var(--gold);color:#fff;font-family:var(--ffb);font-size:.85rem;cursor:pointer">✓ تطبيق</button>
       <button id="crop-cancel-btn" style="padding:9px 28px;border-radius:10px;border:1.5px solid #fff5;background:transparent;color:#fff;font-family:var(--ffb);font-size:.85rem;cursor:pointer">إلغاء</button>
     </div>`;
   document.body.appendChild(modal);
+  document.getElementById('toast')?.setAttribute('hidden','');
 
   const cv=modal.querySelector('#crop-canvas');
-  const zm=modal.querySelector('#crop-zoom');
+  /* تكبير حول نقطة معيّنة (مركز الإصبعين أو مؤشر الماوس) */
+  const MINS=cropBaseScale, MAXS=cropBaseScale*6;
+  function zoomAt(newScale,px,py){
+    newScale=Math.max(MINS,Math.min(MAXS,newScale));
+    cropX=px-(px-cropX)*(newScale/cropScale);
+    cropY=py-(py-cropY)*(newScale/cropScale);
+    cropScale=newScale;drawCrop(cv);
+  }
+  function local(cx,cy){const r=cv.getBoundingClientRect();return[(cx-r.left)*(260/r.width),(cy-r.top)*(260/r.height)];}
 
-  /* zoom: القيمة 100 = cropBaseScale، 400 = 4× cropBaseScale */
-  zm.addEventListener('input',()=>{
-    cropScale=cropBaseScale*(zm.value/100);
-    drawCrop(cv);
-  });
-
-  /* سحب ماوس */
+  /* ماوس: سحب + عجلة للتكبير */
   cv.addEventListener('mousedown',ev=>{cropDrag=true;cv.style.cursor='grabbing';cropOX=ev.clientX-cropX;cropOY=ev.clientY-cropY;ev.preventDefault()});
   window.addEventListener('mousemove',ev=>{if(!cropDrag)return;cropX=ev.clientX-cropOX;cropY=ev.clientY-cropOY;drawCrop(cv)});
-  window.addEventListener('mouseup',()=>{cropDrag=false;cv.style.cursor='grab'},{once:false});
+  window.addEventListener('mouseup',()=>{cropDrag=false;cv.style.cursor='grab'});
+  cv.addEventListener('wheel',ev=>{ev.preventDefault();const [px,py]=local(ev.clientX,ev.clientY);zoomAt(cropScale*(ev.deltaY<0?1.1:0.9),px,py);},{passive:false});
 
-  /* سحب لمس */
-  cv.addEventListener('touchstart',ev=>{const t=ev.touches[0];cropDrag=true;cropOX=t.clientX-cropX;cropOY=t.clientY-cropY},{passive:true});
-  cv.addEventListener('touchmove',ev=>{if(!cropDrag)return;const t=ev.touches[0];cropX=t.clientX-cropOX;cropY=t.clientY-cropOY;drawCrop(cv);ev.preventDefault()},{passive:false});
-  cv.addEventListener('touchend',()=>cropDrag=false);
+  /* لمس: إصبع واحد يسحب، إصبعين يقرّب ويبعّد */
+  let pinch=null;
+  function pinchState(t){
+    const [x1,y1]=local(t[0].clientX,t[0].clientY),[x2,y2]=local(t[1].clientX,t[1].clientY);
+    return{d:Math.hypot(x2-x1,y2-y1),mx:(x1+x2)/2,my:(y1+y2)/2};
+  }
+  cv.addEventListener('touchstart',ev=>{
+    ev.preventDefault();
+    if(ev.touches.length===2){cropDrag=false;const p=pinchState(ev.touches);pinch={...p,s:cropScale,x:cropX,y:cropY};}
+    else if(ev.touches.length===1){pinch=null;const [x,y]=local(ev.touches[0].clientX,ev.touches[0].clientY);cropDrag=true;cropOX=x-cropX;cropOY=y-cropY;}
+  },{passive:false});
+  cv.addEventListener('touchmove',ev=>{
+    ev.preventDefault();
+    if(pinch&&ev.touches.length===2){
+      const p=pinchState(ev.touches);
+      const ns=Math.max(MINS,Math.min(MAXS,pinch.s*(p.d/pinch.d)));
+      /* النقطة اللي كانت تحت مركز الإصبعين تبقى تحتها، مع تحريك الصورة مع حركة الإصبعين */
+      cropX=p.mx-(pinch.mx-pinch.x)*(ns/pinch.s);
+      cropY=p.my-(pinch.my-pinch.y)*(ns/pinch.s);
+      cropScale=ns;drawCrop(cv);
+    }else if(cropDrag&&ev.touches.length===1){
+      const [x,y]=local(ev.touches[0].clientX,ev.touches[0].clientY);
+      cropX=x-cropOX;cropY=y-cropOY;drawCrop(cv);
+    }
+  },{passive:false});
+  cv.addEventListener('touchend',ev=>{
+    if(ev.touches.length===1){pinch=null;const [x,y]=local(ev.touches[0].clientX,ev.touches[0].clientY);cropDrag=true;cropOX=x-cropX;cropOY=y-cropY;}
+    else if(!ev.touches.length){pinch=null;cropDrag=false;}
+  });
 
   modal.querySelector('#crop-apply-btn').onclick=()=>applyCrop(cv,modal);
   modal.querySelector('#crop-cancel-btn').onclick=()=>modal.remove();
