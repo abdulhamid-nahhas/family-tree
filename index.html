@@ -494,8 +494,7 @@ function hideAll(){
 function showRoot(){hideAll();history=[];createNode('zamil');placeNodes(['zamil'],null);backBtn.classList.add('hidden');closeInfo()}
 
 function onNodeClick(id){
-  openInfoPanel(id);
-  /* لا تعيد الفتح إذا هذه العقدة هي آخر مفتوح */
+  /* الضغط على الكارد: يفتح الأبناء فقط — نافذة ⓘ من زر ⓘ حصراً */
   if((FAM[id].children||[]).length>0 && history[history.length-1]!==id)expandNode(id);
 }
 
