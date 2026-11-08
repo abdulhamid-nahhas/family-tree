@@ -3,7 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>شجرة آل زامل جميل نحاس</title>
+<title>شجرة آل نحاس</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&family=Scheherazade+New:wght@400;700&display=swap" rel="stylesheet">
 <style>
 :root{
   --sand:#F5EDD8;--sand-mid:#E8D9B5;--sepia:#5C3D1E;
@@ -11,8 +14,8 @@
   --blue:#6A8FAF;--green:#7AAF8A;
   --fg:#1C1109;--bg:#FAF6EE;--card:#FFFFF8;
   --border:rgba(184,134,42,.22);
-  --ff:'AbarMid','Scheherazade New',serif;
-  --ffb:'Cairo','Segoe UI',sans-serif;
+  --ff:'AbarMid','Scheherazade New','Noto Naskh Arabic',serif;
+  --ffb:'Cairo','Noto Kufi Arabic','Segoe UI',system-ui,sans-serif;
 }
 @media(prefers-color-scheme:dark){:root:not([data-theme=light]){
   --sand:#2A1F0E;--sand-mid:#3A2D18;--sepia:#D4A86A;
@@ -30,7 +33,12 @@ body{font-family:var(--ffb);background:var(--bg);color:var(--fg);display:flex;fl
 .hdr-logo{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:2px}
 .hdr-title{font-family:var(--ff);font-size:clamp(1rem,4vw,1.7rem);font-weight:700;color:var(--sepia)}
 .hdr-sub{font-size:.6rem;color:var(--gold);font-weight:600;letter-spacing:.1em}
-.hdr-nasab{font-family:var(--ff);font-size:.56rem;color:var(--sepia);opacity:.55;line-height:1.8;margin-top:3px}
+.hdr-nasab-wrap{margin-top:4px;text-align:center}
+.nasab-toggle{background:none;border:none;cursor:pointer;display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border-radius:6px;border:1px solid color-mix(in srgb,var(--gold) 35%,transparent)}
+.nasab-label{font-family:var(--ffb);font-size:.6rem;color:var(--gold);font-weight:600}
+.nasab-arrow{font-size:.55rem;color:var(--gold);transition:transform .25s}
+.nasab-arrow.open{transform:rotate(180deg)}
+.hdr-nasab{font-family:var(--ff);font-size:.62rem;color:var(--sepia);opacity:.7;line-height:2;margin-top:5px;padding:6px 10px;background:color-mix(in srgb,var(--gold) 8%,transparent);border-radius:8px;border:1px solid color-mix(in srgb,var(--gold) 20%,transparent)}
 
 .tabs-bar{background:var(--sand-mid);border-bottom:2px solid var(--gold);flex-shrink:0;
   display:flex;overflow-x:auto;scrollbar-width:none}
@@ -53,8 +61,8 @@ body{font-family:var(--ffb);background:var(--bg);color:var(--fg);display:flex;fl
 .panel.active{display:flex;flex-direction:column}
 
 /* ── DRILL TAB ── */
-.stage{flex:1;position:relative;overflow:hidden}
-#canvas{width:100%;height:100%;position:relative}
+.stage{flex:1;position:relative;overflow:auto;-webkit-overflow-scrolling:touch}
+#canvas{width:100%;min-height:100%;position:relative}
 #lines-svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}
 .line{stroke:var(--gold-lt);stroke-width:1.5;fill:none;opacity:.7;stroke-dasharray:1000;stroke-dashoffset:1000;transition:stroke-dashoffset .5s ease}
 .line.drawn{stroke-dashoffset:0}
@@ -78,9 +86,9 @@ body{font-family:var(--ffb);background:var(--bg);color:var(--fg);display:flex;fl
 .node-edit-fab{position:absolute;bottom:-1px;left:-2px;width:20px;height:20px;border-radius:50%;background:var(--gold);border:none;cursor:pointer;display:none;align-items:center;justify-content:center;box-shadow:0 1px 4px rgba(0,0,0,.2)}
 .node:hover .node-edit-fab{display:flex}
 .node-edit-fab svg{width:10px;height:10px;fill:#fff}
-.back-btn{position:fixed;bottom:16px;right:16px;background:var(--gold);color:#fff;border:none;border-radius:50px;padding:8px 18px;font-family:var(--ffb);font-size:.8rem;font-weight:700;cursor:pointer;box-shadow:0 3px 12px rgba(0,0,0,.2);display:flex;align-items:center;gap:5px;transition:opacity .3s,transform .3s;z-index:100}
+.back-btn{position:fixed;bottom:20px;left:16px;background:var(--gold);color:#fff;border:none;border-radius:50%;width:44px;height:44px;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 3px 14px rgba(0,0,0,.25);transition:opacity .3s,transform .3s;z-index:100}
 .back-btn.hidden{opacity:0;pointer-events:none;transform:translateY(8px)}
-.back-btn svg{width:13px;height:13px;fill:currentColor}
+.back-btn svg{width:22px;height:22px;fill:none;stroke:#fff;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
 .info-popup{position:fixed;bottom:60px;left:50%;transform:translateX(-50%);background:var(--card);border:1.5px solid var(--gold);border-radius:14px;padding:12px 16px;min-width:210px;max-width:270px;box-shadow:0 8px 28px rgba(0,0,0,.18);font-family:var(--ffb);z-index:200;transition:opacity .2s}
 .info-popup.hidden{opacity:0;pointer-events:none}
 .info-name{font-family:var(--ff);font-size:1rem;font-weight:700;color:var(--sepia)}
@@ -159,11 +167,17 @@ textarea.form-input{resize:vertical;min-height:52px}
         <circle cx="33" cy="22" r="1.8" fill="#7AAF8A" opacity=".9"/>
       </svg>
       <div>
-        <div class="hdr-title">شجرة آل زامل جميل نحاس</div>
+        <div class="hdr-title">شجرة آل نحاس</div>
         <div class="hdr-sub">شجرة العائلة — ١٤٤٧ هـ</div>
       </div>
     </div>
-    <div class="hdr-nasab">زامل جميل سليمان عبيد عويد حسن شداد محمد عبدالله شاكر زيد هاشم سالم عبدالله بن عمر بن الخطاب ﵁</div>
+    <div class="hdr-nasab-wrap">
+      <button class="nasab-toggle" id="nasab-toggle" onclick="toggleNasab()">
+        <span class="nasab-label">النسب الكامل</span>
+        <span class="nasab-arrow" id="nasab-arrow">▼</span>
+      </button>
+      <div class="hdr-nasab" id="nasab-text" hidden>زامل جميل سليمان عبيد عويد حسن شداد محمد عبدالله شاكر زيد هاشم سالم عبدالله بن عمر بن الخطاب ﵁</div>
+    </div>
   </div>
 </header>
 
@@ -203,8 +217,7 @@ textarea.form-input{resize:vertical;min-height:52px}
 </div>
 
 <button class="back-btn hidden" id="back-btn" onclick="goBack()">
-  <svg viewBox="0 0 20 20"><path d="M13 5l-6 5 6 5" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
-  رجوع
+  <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
 </button>
 
 <div class="info-popup hidden" id="info-popup">
@@ -253,10 +266,10 @@ textarea.form-input{resize:vertical;min-height:52px}
 <script>
 /* ══ DATA ══ */
 let FAM = {
-  zamil:{name:'زامل جميل نحاس',sex:'m',role:'root',bio:'الجد الأكبر — نسبه يعود إلى سيدنا عمر بن الخطاب رضي الله عنه',children:['abeer','faiza','layla']},
+  zamil:{name:'زامل جميل نحاس',sex:'m',role:'root',bio:'الجد الأكبر — نسبه يعود إلى سيدنا عمر بن الخطاب رضي الله عنه',children:['abeer','faiza','layla','bushra']},
+
+  /* ── زوجة 1: عبير صولان ── */
   abeer:{name:'عبير صولان',sex:'f',role:'wife',bio:'الزوجة الأولى',children:['abdulmalik','yousef','racan','umkalt','ahmed','abdulraouf','eilaf','rifal','abdulghani']},
-  faiza:{name:'فائزة المنصوري',sex:'f',role:'wife',bio:'الزوجة الثانية',children:['abdulrahman','husam_f','abdulhamid','abdulmajid','ahlam','muhammad_f','hanan','layan']},
-  layla:{name:'ليلى فؤاد مفتي',sex:'f',role:'wife',bio:'الزوجة الثالثة',children:['samia','abdulaziz','abdullah_l','basmah','jamil_l','abdullatif','mahmoud','jawhar','abdulwahab','abdulsalam','samiya2','fuad_l']},
   abdulmalik:{name:'عبدالملك',sex:'m',par:'abeer',children:[]},
   yousef:{name:'يوسف',sex:'m',par:'abeer',children:[]},
   racan:{name:'راكان',sex:'m',par:'abeer',children:[]},
@@ -266,24 +279,30 @@ let FAM = {
   eilaf:{name:'إيلاف',sex:'f',par:'abeer',children:[]},
   rifal:{name:'ريفال',sex:'f',par:'abeer',children:[]},
   abdulghani:{name:'عبدالغني',sex:'m',par:'abeer',children:[]},
+
+  /* ── زوجة 2: فائزة المنصوري ── */
+  faiza:{name:'فائزة أحمد المنصوري',sex:'f',role:'wife',bio:'الزوجة الثانية',children:['abdulrahman','husam_f','abdulhamid','ahlam','abdulmajid','muhammad_f','hanan','layan']},
   abdulrahman:{name:'عبدالرحمن',sex:'m',par:'faiza',children:['jamal','ibthal']},
   jamal:{name:'جمال',sex:'m',par:'abdulrahman',children:[]},
   ibthal:{name:'ابتهال',sex:'f',par:'abdulrahman',children:[]},
-  husam_f:{name:'حسام',sex:'m',par:'faiza',children:[]},
+  husam_f:{name:'حسام',sex:'m',par:'faiza',rada:true,bio:'رضاعة',children:[]},
   abdulhamid:{name:'عبدالحميد',sex:'m',par:'faiza',children:['hasan_ah','afnan']},
   hasan_ah:{name:'حسان',sex:'m',par:'abdulhamid',children:[]},
   afnan:{name:'أفنان',sex:'f',par:'abdulhamid',children:[]},
-  abdulmajid:{name:'عبدالمجيد',sex:'m',par:'faiza',children:['taghrid','saif','reem']},
-  taghrid:{name:'تغريد',sex:'f',par:'abdulmajid',children:[]},
-  saif:{name:'سيف',sex:'m',par:'abdulmajid',children:[]},
-  reem:{name:'ريم',sex:'f',par:'abdulmajid',children:[]},
   ahlam:{name:'أحلام',sex:'f',par:'faiza',children:['hamza','muath','maryam']},
   hamza:{name:'حمزة',sex:'m',par:'ahlam',children:[]},
   muath:{name:'معاذ',sex:'m',par:'ahlam',children:[]},
   maryam:{name:'مريم',sex:'f',par:'ahlam',children:[]},
+  abdulmajid:{name:'عبدالمجيد',sex:'m',par:'faiza',children:['taghrid','saif','reem']},
+  taghrid:{name:'تغريد',sex:'f',par:'abdulmajid',children:[]},
+  saif:{name:'سيف',sex:'m',par:'abdulmajid',children:[]},
+  reem:{name:'ريم',sex:'f',par:'abdulmajid',children:[]},
   muhammad_f:{name:'محمد',sex:'m',par:'faiza',children:[]},
   hanan:{name:'حنان',sex:'f',par:'faiza',children:[]},
   layan:{name:'ليان',sex:'f',par:'faiza',children:[]},
+
+  /* ── زوجة 3: ليلى فؤاد مفتي ── */
+  layla:{name:'ليلى فؤاد مفتي',sex:'f',role:'wife',bio:'الزوجة الثالثة',children:['samia','abdulaziz','abdullah_l','basmah','samiya2','jamil_l','abdullatif','mahmoud','jawhar','abdulwahab','asmaa_l','abdulsalam','umar_l','aishah_l','jawhar2_l','fuad_l']},
   samia:{name:'سمية',sex:'f',par:'layla',children:['bara','leen','lujayn','alfdaa']},
   bara:{name:'البراء',sex:'m',par:'samia',children:[]},
   leen:{name:'لين',sex:'f',par:'samia',children:[]},
@@ -301,21 +320,36 @@ let FAM = {
   basmah:{name:'بسمة',sex:'f',par:'layla',children:['muhammad_b','jawad']},
   muhammad_b:{name:'محمد',sex:'m',par:'basmah',children:[]},
   jawad:{name:'جواد',sex:'m',par:'basmah',children:[]},
+  samiya2:{name:'سامية',sex:'f',par:'layla',children:[]},
   jamil_l:{name:'جميل',sex:'m',par:'layla',children:['ghaith']},
   ghaith:{name:'غيث',sex:'m',par:'jamil_l',children:[]},
-  abdullatif:{name:'عبداللطيف',sex:'m',par:'layla',children:['rayan']},
+  abdullatif:{name:'عبداللطيف',sex:'m',par:'layla',children:['rayan','rayan2']},
   rayan:{name:'ريان',sex:'m',par:'abdullatif',children:[]},
+  rayan2:{name:'ريان',sex:'m',par:'abdullatif',children:[]},
   mahmoud:{name:'محمود',sex:'m',par:'layla',children:[]},
   jawhar:{name:'جوهرة',sex:'f',par:'layla',children:[]},
   abdulwahab:{name:'عبدالوهاب',sex:'m',par:'layla',children:[]},
+  asmaa_l:{name:'أسماء',sex:'f',par:'layla',children:[]},
   abdulsalam:{name:'عبدالسلام',sex:'m',par:'layla',children:[]},
-  samiya2:{name:'سامية',sex:'f',par:'layla',children:[]},
+  umar_l:{name:'عمر',sex:'m',par:'layla',children:[]},
+  aishah_l:{name:'عائشة',sex:'f',par:'layla',children:[]},
+  jawhar2_l:{name:'الجوهرة',sex:'f',par:'layla',children:[]},
   fuad_l:{name:'فؤاد',sex:'m',par:'layla',children:[]},
+
+  /* ── بشرى (رضاعة؟ — منفصلة في PDF) ── */
+  bushra:{name:'بشرى',sex:'f',rada:true,par:'zamil',bio:'رضاعة',children:[]},
 };
 
 function loadData(){try{const s=localStorage.getItem('fam_data');if(s)FAM=JSON.parse(s)}catch(e){}}
 function saveData(){try{localStorage.setItem('fam_data',JSON.stringify(FAM))}catch(e){}}
 loadData();
+
+function toggleNasab(){
+  const txt=document.getElementById('nasab-text');
+  const arrow=document.getElementById('nasab-arrow');
+  if(txt.hidden){txt.removeAttribute('hidden');arrow.classList.add('open')}
+  else{txt.setAttribute('hidden','');arrow.classList.remove('open')}
+}
 
 function avatarSVG(sex){
   if(sex==='m')return`<svg class="default-avatar" viewBox="0 0 40 40" fill="none"><circle cx="20" cy="14" r="8" fill="#6A8FAF" opacity=".7"/><ellipse cx="20" cy="34" rx="13" ry="8" fill="#6A8FAF" opacity=".4"/><circle cx="20" cy="14" r="6" fill="#c8daea"/><ellipse cx="20" cy="12" rx="4" ry="3" fill="#6A8FAF" opacity=".5"/></svg>`;
@@ -374,11 +408,21 @@ function createNode(id){
 
 function placeNodes(ids,parentId){
   const {w,h}=getSize();const n=ids.length;
+  const mobile=w<520;
   ids.forEach((id,i)=>{
     const el=nodeEls[id]||createNode(id);
     let x,y;
     if(!parentId){x=w/2;y=h/2;}
-    else{
+    else if(mobile && n>4){
+      /* جوال: تدرج — عمودان متناوبان (يمين/يسار) */
+      const col=i%2;
+      const row=Math.floor(i/2);
+      const parEl=nodeEls[parentId];let parY=h*0.17;
+      if(parEl){const pr=parEl.getBoundingClientRect(),sr=stage.getBoundingClientRect();parY=pr.top+pr.height/2-sr.top}
+      const colX=w*0.26;
+      x=col===0?w/2+colX:w/2-colX;
+      y=parY+120+row*100;
+    } else {
       const totalSpan=Math.min(n*105,w*0.88);
       const spacing=n>1?totalSpan/(n-1):0;
       x=n===1?w/2:(w/2-totalSpan/2)+i*spacing;
@@ -387,7 +431,12 @@ function placeNodes(ids,parentId){
       y=parY+160;if(y>h*0.82)y=parY-160;
     }
     el.style.left=x+'px';el.style.top=y+'px';
-    setTimeout(()=>{el.classList.remove('hidden');el.classList.add('visible')},20+i*25);
+    setTimeout(()=>{
+      el.classList.remove('hidden');el.classList.add('visible');
+      /* expand canvas height for mobile scroll */
+      const needed=y+120;
+      if(parseInt(canvas.style.height||0)<needed)canvas.style.height=needed+'px';
+    },20+i*25);
   });
 }
 
@@ -538,19 +587,27 @@ function buildFullTree(){
 /* ══ TAB3: PROFILES ══ */
 function getBranch(id){
   const m=FAM[id];
-  if(m.role==='root')return'الجد';
-  if(id==='abeer')return'فرع عبير';
-  if(id==='faiza')return'فرع فائزة';
-  if(id==='layla')return'فرع ليلى';
-  let cur=id;
-  for(let i=0;i<6;i++){const p=FAM[cur]?.par;if(!p)break;cur=p;const r=FAM[p]?.role;if(r==='wife')return getBranch(p)}
-  return'';
+  if(m.role==='root')return'الجد الأكبر';
+  if(m.role==='wife'){
+    // اسم الزوجة كـ"أبناء فلانة"
+    return'أبناء '+m.name.split(' ')[0];
+  }
+  if(m.rada)return'رضاعة';
+  // ارجع للأم/الأب المباشر
+  const parId=m.par;
+  if(!parId)return'';
+  const par=FAM[parId];
+  if(!par)return'';
+  if(par.role==='wife')return'أبناء '+par.name.split(' ')[0];
+  if(par.role==='root')return'';
+  // حفيد — نسب لابن أو بنت
+  return'أبناء '+par.name;
 }
 
 function buildProfiles(){
   const grid=document.getElementById('profiles-grid');
-  if(grid.children.length>0)return;
-  const order=['zamil','abeer','faiza','layla',...Object.keys(FAM).filter(k=>!['zamil','abeer','faiza','layla'].includes(k))];
+  grid.innerHTML='';
+  const order=['zamil','abeer','faiza','layla','bushra',...Object.keys(FAM).filter(k=>!['zamil','abeer','faiza','layla','bushra'].includes(k))];
   order.forEach(id=>{
     if(!FAM[id])return;
     const m=FAM[id];
