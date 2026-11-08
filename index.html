@@ -273,12 +273,12 @@ textarea.form-input{resize:vertical;min-height:52px}
   <input type="file" id="avatar-file-input" accept="image/*" onchange="handleAvatarUpload(event)">
   <div class="info-fields">
     <div class="info-field-row">
-      <label class="info-field-label">الاسم الكامل</label>
-      <input id="edit-name" class="info-field-input" type="text">
+      <label class="info-field-label">الاسم على البطاقة <span style="font-size:.6rem;opacity:.6">(يظهر في الشجرة)</span></label>
+      <input id="edit-short" class="info-field-input" type="text" placeholder="مثال: عبدالحميد">
     </div>
     <div class="info-field-row">
-      <label class="info-field-label">الاسم على البطاقة</label>
-      <input id="edit-display-name" class="info-field-input" type="text" placeholder="اتركه فارغاً لاستخدام الاسم الأول تلقائياً">
+      <label class="info-field-label">الاسم الكامل / النسب <span style="font-size:.6rem;opacity:.6">(يظهر في نافذة المعلومات فقط)</span></label>
+      <input id="edit-name" class="info-field-input" type="text" placeholder="مثال: عبد الحميد بن زامل بن جميل...">
     </div>
     <div class="info-field-row">
       <label class="info-field-label">النسب</label>
@@ -789,8 +789,9 @@ function openInfoPanel(id){
   document.getElementById('info-name').textContent=m.name;
   document.getElementById('info-role').textContent=m.role==='root'?'الجد الأكبر':m.role==='wife'?'زوجة':(m.rada?(m.sex==='f'?'رضاعة أنثى':'رضاعة ذكر'):'');
   /* حقول التعديل */
-  document.getElementById('edit-name').value=m.name;
-  document.getElementById('edit-display-name').value=m.short||'';
+  /* الاسم على البطاقة: إما short صريح أو أول كلمة من الاسم */
+  document.getElementById('edit-short').value=m.short||shortName(m.name,null)||'';
+  document.getElementById('edit-name').value=m.name||'';
   document.getElementById('edit-bio').value=m.bio||'';
   document.getElementById('edit-birth').value=m.birth||'';
   document.getElementById('edit-death').value=m.death||'';
@@ -959,17 +960,16 @@ function handleAvatarUpload(e){
 }
 function saveEdit(){
   if(!editingId)return;
-  const name=document.getElementById('edit-name').value.trim();
-  const dispName=document.getElementById('edit-display-name').value.trim();
+  const shortVal=document.getElementById('edit-short').value.trim();
+  const fullName=document.getElementById('edit-name').value.trim();
   const bio=document.getElementById('edit-bio').value.trim();
   const birth=document.getElementById('edit-birth').value.trim();
   const death=document.getElementById('edit-death').value.trim();
-  if(!name){showToast('الاسم مطلوب');return}
-  FAM[editingId].name=name;
+  if(!shortVal){showToast('الاسم على البطاقة مطلوب');return}
+  /* short = ما يظهر في الشجرة، name = النسب الكامل */
+  FAM[editingId].short=shortVal;
+  FAM[editingId].name=fullName||shortVal;
   FAM[editingId].bio=bio;
-  /* الاسم على البطاقة */
-  if(dispName) FAM[editingId].short=dispName;
-  else delete FAM[editingId].short;
   /* التواريخ */
   if(birth) FAM[editingId].birth=birth; else delete FAM[editingId].birth;
   if(death) FAM[editingId].death=death; else delete FAM[editingId].death;
@@ -990,35 +990,44 @@ function cancelAddChild(){
   document.getElementById('new-child-birth').value='';
 }
 function confirmAddChild(){
-  const name=document.getElementById('new-child-name').value.trim();
-  if(!name){showToast('الرجاء إدخال اسم المولود');return;}
+  const shortVal=document.getElementById('new-child-name').value.trim();
+  if(!shortVal){showToast('الرجاء إدخال الاسم');return;}
   const sex=document.getElementById('new-child-sex').value;
   const birth=document.getElementById('new-child-birth').value.trim();
-  /* توليد معرّف فريد */
-  let baseId=name.split(' ')[0].toLowerCase().replace(/[^a-z؀-ۿ]/g,'');
-  if(!baseId) baseId='child';
+  /* توليد معرّف فريد من أول كلمة */
+  let baseId='child_'+(Date.now()%100000);
   let newId=baseId;let n=2;while(FAM[newId])newId=baseId+'_'+n++;
-  /* إضافة للبيانات */
-  FAM[newId]={name,sex,par:editingId};
+  /* إضافة للبيانات — short هو اسم البطاقة، name يمكن تعديله لاحقاً من نافذة المعلومات */
+  FAM[newId]={name:shortVal, short:shortVal, sex, par:editingId};
   if(birth) FAM[newId].birth=birth;
   if(!FAM[editingId].children) FAM[editingId].children=[];
   FAM[editingId].children.push(newId);
   saveData();
   cancelAddChild();
-  showToast('✓ تمت إضافة '+name);
-  /* إذا كنا في عرض هذا الشخص، أعد الرسم */
+  showToast('✓ تمت إضافة '+shortVal);
+  /* إذا كنا في عرض هذا الشخص أعد الرسم لإظهار الدائرة الجديدة */
   if(history[history.length-1]===editingId){
+    hideAll();
+    const {w,h}=getSize();
+    createNode(editingId);
+    nodeEls[editingId].style.left=w/2+'px';
+    nodeEls[editingId].style.top=h*0.17+'px';
+    nodeEls[editingId].classList.remove('hidden');
+    nodeEls[editingId].classList.add('visible');
     const kids=FAM[editingId].children||[];
     kids.forEach(k=>createNode(k));
     placeNodes(kids,editingId);
-    setTimeout(()=>kids.forEach(k=>drawLine(editingId,k,FAM[k]?.role==='wife')),150);
+    setTimeout(()=>{
+      kids.forEach(k=>drawLine(editingId,k,FAM[k]?.role==='wife'));
+      showSpouseFor(editingId);
+    },150);
   }
 }
 
 function refreshUI(id){
   if(nodeEls[id]){
     const ring=nodeEls[id].querySelector('.avatar-ring');if(ring)ring.innerHTML=avatarHTML(id);
-    const lbl=nodeEls[id].querySelector('.node-name');if(lbl)lbl.textContent=shortName(FAM[id].name,id);
+    const lbl=nodeEls[id].querySelector('.node-name');if(lbl)lbl.textContent=FAM[id].short||shortName(FAM[id].name,id);
   }
   const card=document.querySelector(`.profile-card[data-id="${id}"]`);
   if(card){const av=card.querySelector('.pc-avatar');if(av)av.innerHTML=avatarHTML(id);const nm=card.querySelector('.pc-name');if(nm)nm.textContent=FAM[id].name;}
