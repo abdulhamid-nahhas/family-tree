@@ -665,7 +665,12 @@ function clearSpouses(){spouseEls.forEach(e=>e.remove());spouseEls=[]}
 function showSpouseFor(id){
   const m=FAM[id];
   const nodeEl=nodeEls[id];if(!nodeEl)return;
-  const spIds=(m.spouseIds||[]).filter(s=>FAM[s]);
+  /* رتّب الزوجات بحسب order ثم بحسب ترتيب الإضافة */
+  const spIds=(m.spouseIds||[]).filter(s=>FAM[s]).sort((a,b)=>{
+    const oa=FAM[a]?.order??9999;
+    const ob=FAM[b]?.order??9999;
+    return oa-ob;
+  });
   if(!spIds.length)return;
   const nx=parseFloat(nodeEl.style.left);
   const ny=parseFloat(nodeEl.style.top);
@@ -1287,19 +1292,25 @@ function saveEdit(){
   const death=document.getElementById('edit-death').value.trim();
   if(!shortVal){showToast('الاسم الأول مطلوب');return}
 
-  /* معالجة الترتيب بين الإخوة */
+  /* معالجة الترتيب — يشمل الأبناء والزوجات */
   const parId=FAM[editingId]?.par;
-  if(orderVal && parId && FAM[parId]){
-    /* إذا تكرر الرقم: نزيح كل من له نفس الرقم أو أكبر +1 */
-    const siblings=(FAM[parId].children||[]).filter(s=>s!==editingId);
-    siblings.forEach(s=>{
-      if(FAM[s]?.order!=null && FAM[s].order>=orderVal) FAM[s].order++;
-    });
-  } else if(!orderVal && parId && FAM[parId]){
-    /* إذا حُذف الترتيب: اضغط الفجوات في أرقام الإخوة */
-    const siblings=(FAM[parId].children||[]).filter(s=>s!==editingId&&FAM[s]?.order!=null);
-    siblings.sort((a,b)=>FAM[a].order-FAM[b].order);
-    siblings.forEach((s,i)=>{ FAM[s].order=i+1; });
+  if(parId && FAM[parId]){
+    const isWifeEntry=(FAM[editingId]?.role==='wife');
+    /* قائمة الأقران: إذا زوجة → spouseIds الأب، وإلا → children الأب */
+    const peers=isWifeEntry
+      ? (FAM[parId].spouseIds||[]).filter(s=>s!==editingId)
+      : (FAM[parId].children||[]).filter(s=>s!==editingId);
+    if(orderVal){
+      /* إذا تكرر الرقم: نزيح كل من له نفس الرقم أو أكبر +1 */
+      peers.forEach(s=>{
+        if(FAM[s]?.order!=null && FAM[s].order>=orderVal) FAM[s].order++;
+      });
+    } else {
+      /* إذا حُذف الترتيب: اضغط الفجوات في أرقام الأقران */
+      const ordered=peers.filter(s=>FAM[s]?.order!=null);
+      ordered.sort((a,b)=>FAM[a].order-FAM[b].order);
+      ordered.forEach((s,i)=>{ FAM[s].order=i+1; });
+    }
   }
 
   FAM[editingId].short=shortVal;
