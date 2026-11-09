@@ -1163,11 +1163,11 @@ function openInfoPanel(id){
     if(el) el.style.display='';
   });
   /* أزرار الإضافة */
+  /* الزوجات والأزواج: يظهر لهم "إضافة مولود" — والمولود ينحط تحت الزوج مع إخوانه من نفس الأم */
   document.getElementById('add-spouse-row').style.display=isWife?'none':'';
-  document.getElementById('add-child-row').style.display=isWife?'none':'';
-  /* إظهار/إخفاء القسم الخارجي: للزوجة اخفيه فقط لو ما في محتوى */
+  document.getElementById('add-child-row').style.display='';
   const addSec=document.getElementById('add-child-section');
-  if(addSec) addSec.style.display=isWife?'none':'';
+  if(addSec) addSec.style.display='';
   ['spouse-btn-m','spouse-btn-f','child-btn-m','child-btn-f'].forEach(id=>{document.getElementById(id)?.classList.remove('selected')});
   const p=document.getElementById('info-popup');
   p.classList.remove('hidden');
