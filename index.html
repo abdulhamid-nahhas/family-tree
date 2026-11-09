@@ -206,6 +206,11 @@ textarea.info-field-input{resize:vertical;min-height:46px}
 .profiles-wrap{flex:1;overflow-y:auto;padding:12px}
 .profiles-search{width:100%;padding:8px 14px;border-radius:12px;border:1.5px solid var(--border);background:var(--sand);color:var(--fg);font-family:var(--ffb);font-size:.85rem;margin-bottom:12px}
 .profiles-search:focus{outline:none;border-color:var(--gold)}
+.pf-chips{display:flex;gap:6px;flex-wrap:wrap;margin:-4px 0 8px}
+.pf-chip{border:1.5px solid var(--border);background:var(--card);color:var(--sepia);border-radius:20px;padding:4px 11px;font:700 .74rem var(--ffb);cursor:pointer;display:flex;gap:5px;align-items:center}
+.pf-chip b{font-weight:700;color:var(--gold);font-variant-numeric:tabular-nums}
+.pf-chip.on{background:var(--gold);border-color:var(--gold);color:#fff}.pf-chip.on b{color:#fff}
+.pf-count{font:600 .72rem var(--ffb);color:var(--sepia);opacity:.75;margin-bottom:8px}
 .profiles-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px}
 .profile-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 10px;text-align:center;cursor:pointer;transition:transform .15s,box-shadow .15s;position:relative}
 .profile-card:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,.1)}
@@ -315,7 +320,9 @@ textarea.form-input{resize:vertical;min-height:52px}
 <!-- TAB 3 -->
 <div class="panel" id="panel-profiles">
   <div class="profiles-wrap">
-    <input class="profiles-search" type="search" placeholder="🔍 ابحث عن عضو..." oninput="filterProfiles(this.value)" dir="rtl">
+    <input class="profiles-search" id="profiles-search" type="search" placeholder="🔍 ابحث عن عضو..." oninput="filterProfiles(this.value)" dir="rtl">
+    <div class="pf-chips" id="pf-chips"></div>
+    <div class="pf-count" id="pf-count"></div>
     <div class="profiles-grid" id="profiles-grid"></div>
   </div>
 </div>
@@ -776,6 +783,8 @@ function switchTab(t){
   if(t==='full')buildFullTree();
   if(t==='profiles')buildProfiles();
   if(t==='log')loadLog();
+  /* شريط الاسم الكامل يخص الشجرة التفاعلية بس */
+  const pb=document.getElementById('person-bar');if(pb)pb.hidden=(t!=='drill')||!pb.textContent;
 }
 
 /* ══ TAB1: DRILL ══ */
@@ -1174,7 +1183,7 @@ function showPersonBar(id){
   const bar=document.getElementById('person-bar');if(!bar)return;
   let t=id&&FAM[id]?nasabFullName(id):'';
   if(t&&FAM[id]&&!FAM[id].rada&&FAM[id].role!=='wife'&&FAM[id].role!=='root'&&!fatherOf(id))t+=' (الأب غير محدد)';
-  setNameWithRip(bar,id,t);bar.hidden=!t;
+  setNameWithRip(bar,id,t);bar.hidden=!t||(typeof activeTab!=="undefined"&&activeTab!=="drill");
 }
 
 /* البيانات الأساسية: تاريخ الميلاد + الاسم الكامل (الصورة اختيارية) */
@@ -1790,31 +1799,62 @@ function getBranch(id){
   return'أبناء '+par.name;
 }
 
+/* ══ بطاقات الأعضاء: بحث بالاسم الأول أولاً + فلاتر ══ */
+let PF={q:'',chip:'all'};
+function normAr(t){return String(t||'').replace(/[\u064B-\u0652\u0640]/g,'').replace(/[أإآ]/g,'ا').replace(/ة/g,'ه').replace(/ى/g,'ي').trim().toLowerCase();}
+function firstOf(id){return FAM[id]?.short||shortName(FAM[id]?.name,id)||'';}
+function isBlood(id){const m=FAM[id];return m&&m.role!=='wife'&&m.role!=='root'&&!m.rada;}
+/* الفلاتر: الكل، أبناء كل زوجة لزامل، الرضاعة، الأولاد، البنات */
+function profileChips(){
+  const chips=[{key:'all',label:'الكل',test:()=>true}];
+  const root=Object.keys(FAM).find(k=>FAM[k].role==='root');
+  if(root) wivesOf(root).forEach(w=>{
+    const kids=new Set(kidsOfCouple(root,w));
+    chips.push({key:'w:'+w,label:'أبناء '+firstOf(w),test:id=>kids.has(id)&&!FAM[id].rada});
+  });
+  chips.push({key:'rada',label:'الرضاعة',test:id=>!!FAM[id].rada});
+  chips.push({key:'m',label:'الأولاد',test:id=>isBlood(id)&&FAM[id].sex!=='f'});
+  chips.push({key:'f',label:'البنات',test:id=>isBlood(id)&&FAM[id].sex==='f'});
+  return chips;
+}
 function buildProfiles(){
   const grid=document.getElementById('profiles-grid');
+  const chips=profileChips();
+  if(!chips.some(c=>c.key===PF.chip))PF.chip='all';
+  const ids=Object.keys(FAM);
+  document.getElementById('pf-chips').innerHTML=chips.map(c=>`<button type="button" class="pf-chip${c.key===PF.chip?' on':''}" data-k="${c.key}">${c.label} <b>${ids.filter(c.test).length}</b></button>`).join('');
+  document.querySelectorAll('.pf-chip').forEach(b=>b.onclick=()=>{PF.chip=b.dataset.k;buildProfiles();});
+  const chip=chips.find(c=>c.key===PF.chip);
+  const q=normAr(PF.q);
+  /* الترتيب: يبدأ بالاسم الأول ← فيه الاسم الأول ← في الاسم الكامل أو الفرع — وداخل كل مجموعة أبجدي */
+  const rank=id=>{
+    if(!q)return 0;
+    const f=normAr(firstOf(id));
+    if(f.startsWith(q))return 0;
+    if(f.includes(q))return 1;
+    if(normAr(effectiveFullName(id)).includes(q)||normAr(getBranch(id)).includes(q))return 2;
+    return 9;
+  };
+  const baseOrder=['zamil','abeer','faiza','layla','bushra'];
+  let list=ids.filter(id=>chip.test(id)).map(id=>({id,r:rank(id)})).filter(x=>x.r<9);
+  list.sort((a,b)=>a.r-b.r||(q?firstOf(a.id).localeCompare(firstOf(b.id),'ar'):((baseOrder.indexOf(a.id)+1||99)-(baseOrder.indexOf(b.id)+1||99))));
+  document.getElementById('pf-count').textContent=list.length+' عضو';
   grid.innerHTML='';
-  const order=['zamil','abeer','faiza','layla','bushra',...Object.keys(FAM).filter(k=>!['zamil','abeer','faiza','layla','bushra'].includes(k))];
-  order.forEach(id=>{
-    if(!FAM[id])return;
+  list.forEach(({id})=>{
     const m=FAM[id];
     const card=document.createElement('div');card.className='profile-card';card.dataset.id=id;
     const avcls='pc-avatar'+(m.sex==='f'?' female':'')+(m.rada?' rada':'')+(m.role==='root'?' root':'');
     const radaCls=m.rada?(m.sex==='f'?' rada rada-f':' rada rada-m'):'';
     card.innerHTML=`<div class="${avcls}${radaCls}">${avatarHTML(id)}</div>
-      <div class="pc-name">${m.name}${isDeceased(id)?`&zwnj;<span class="rip">${ripText(id)}</span>`:''}</div>
+      <div class="pc-name">${escapeHtml(effectiveFullName(id))}${isDeceased(id)?`&zwnj;<span class="rip">${ripText(id)}</span>`:''}</div>
       <div class="pc-role">${m.role==='root'?'الجد الأكبر':m.role==='wife'?'زوجة':(m.rada?(m.sex==='f'?'رضاعة أنثى':'رضاعة ذكر'):getNasab(id))}</div>
       <div class="pc-branch">${getBranch(id)}</div>`;
     card.addEventListener('click',()=>{switchTab('drill');setTimeout(()=>{showRoot();openInfoPanel(id)},120)});
     grid.appendChild(card);
   });
+  if(!list.length)grid.innerHTML='<div class="log-empty" style="grid-column:1/-1">ما فيه أحد بهالبحث</div>';
 }
-
-function filterProfiles(q){
-  document.querySelectorAll('.profile-card').forEach(c=>{
-    const m=FAM[c.dataset.id];
-    c.style.display=(m.name.includes(q)||getBranch(c.dataset.id).includes(q))?'':'none';
-  });
-}
+function filterProfiles(q){PF.q=q;buildProfiles();}
 
 /* ══ EDIT (داخل نافذة ⓘ) ══ */
 let editingId=null,pendingPhoto=null,pendingSpouses={},editingRada=false,editingSex='m';
@@ -1889,7 +1929,29 @@ function updateRadaUI(){
 
 function openEditModal(id){openInfoPanel(id)} /* للتوافق مع أزرار قديمة */
 
-function triggerAvatarUpload(){document.getElementById('avatar-file-input').click()}
+/* رفع الصورة: اختيار بين الكاميرا والمعرض */
+function triggerAvatarUpload(){
+  document.getElementById('photo-src-sheet')?.remove();
+  const box=document.createElement('div');box.id='photo-src-sheet';
+  box.style.cssText='position:fixed;inset:0;z-index:10050;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;justify-content:center';
+  const btn='width:100%;padding:13px;border:none;border-radius:12px;font:700 .95rem var(--ffb);margin-bottom:8px;cursor:pointer';
+  box.innerHTML=`<div style="background:var(--card);color:var(--sepia);width:100%;max-width:420px;border-radius:18px 18px 0 0;padding:16px 16px calc(14px + env(safe-area-inset-bottom));direction:rtl;text-align:center">
+    <div style="font-weight:700;margin-bottom:12px">إضافة صورة</div>
+    <button id="ps-cam" style="${btn};background:var(--gold);color:#fff">📷 التقاط بالكاميرا</button>
+    <button id="ps-gal" style="${btn};background:transparent;border:1.5px solid var(--gold);color:var(--gold)">🖼️ اختيار من المعرض</button>
+    <button id="ps-x" style="${btn};background:transparent;color:var(--sepia);opacity:.7;margin-bottom:0">إلغاء</button></div>`;
+  document.body.appendChild(box);
+  const close=()=>box.remove();
+  box.onclick=e=>{if(e.target===box)close();};
+  box.querySelector('#ps-x').onclick=close;
+  box.querySelector('#ps-gal').onclick=()=>{close();document.getElementById('avatar-file-input').click();};
+  box.querySelector('#ps-cam').onclick=()=>{
+    close();
+    const cam=document.createElement('input');cam.type='file';cam.accept='image/*';cam.setAttribute('capture','environment');cam.style.display='none';
+    cam.onchange=ev=>{handleAvatarUpload(ev);setTimeout(()=>cam.remove(),2000);};
+    document.body.appendChild(cam);cam.click();
+  };
+}
 
 /* ── Crop دائري ── */
 let cropImg=null,cropDrag=false,cropX=0,cropY=0,cropOX=0,cropOY=0,cropScale=1,cropBaseScale=1;
