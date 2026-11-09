@@ -271,6 +271,7 @@ textarea.info-field-input{resize:vertical;min-height:46px}
 .pf-chip{border:1.5px solid var(--border);background:var(--card);color:var(--sepia);border-radius:20px;padding:4px 11px;font:700 .74rem var(--ffb);cursor:pointer;display:flex;gap:5px;align-items:center}
 .pf-chip b{font-weight:700;color:var(--gold);font-variant-numeric:tabular-nums}
 .pf-chip.on{background:var(--gold);border-color:var(--gold);color:#fff}.pf-chip.on b{color:#fff}
+.pf-key{float:left;opacity:.85}
 .pf-count{font:600 .72rem var(--ffb);color:var(--sepia);opacity:.75;margin-bottom:8px}
 .profiles-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(106px,1fr));gap:10px;padding:6px 2px 10px}
 /* بطاقات على طريقة كلاش رويال: إطار ملوّن حسب النوع، صورة كبيرة، اسم على شريط */
@@ -2085,7 +2086,8 @@ function famStats(id){
   /* الرابط والشخص الأصلي = شخص واحد */
   const kids=[...new Set(directKids(id).map(realId))];
   const seen=new Set(kids);let grand=0;
-  const walk=k=>directKids(k).map(realId).forEach(g=>{if(seen.has(g))return;seen.add(g);grand++;walk(g);});
+  /* الأحفاد بالنسب بس: ما ننزل تحت ابن/ابنة الرضاعة، وما نحسب أحد بالرضاعة حفيد */
+  const walk=k=>{if(FAM[k]&&FAM[k].rada)return;directKids(k).map(realId).forEach(g=>{if(seen.has(g)||(FAM[g]&&FAM[g].rada))return;seen.add(g);grand++;walk(g);});};
   kids.forEach(walk);
   const sons=kids.filter(k=>FAM[k].sex!=='f').length;
   return{sons,daughters:kids.length-sons,grand,total:kids.length+grand};
@@ -2100,7 +2102,8 @@ function profileChips(){
   const notSpouse=id=>FAM[id].role!=='wife'&&FAM[id].role!=='root';
   const zKids=new Set(directKids(root).filter(k=>!FAM[k].rada));
   const zDirect=new Set(directKids(root));
-  const zAll=new Set();{const walk=k=>directKids(k).forEach(g=>{if(!zAll.has(g)){zAll.add(g);walk(g);}});walk(root);}
+  /* أحفاد زامل بالنسب: ما ننزل تحت أبناء الرضاعة (عيالهم أحفاد رضاعة مو نسب) */
+  const zAll=new Set();{const walk=k=>directKids(k).forEach(g=>{if(!zAll.has(g)){zAll.add(g);if(!FAM[g]||!FAM[g].rada)walk(g);}});walk(root);}
   const chips=[
     {key:'zk',g:'lin',label:'زامل',test:id=>zKids.has(id)},
     {key:'zg',g:'lin',label:'أحفاد زامل',test:id=>zAll.has(id)&&!zDirect.has(id)&&notSpouse(id)&&!FAM[id].rada},
@@ -2155,7 +2158,7 @@ function buildProfiles(){
   let list=ids.filter(id=>chip.test(id)).map(id=>({id,r:rank(id)})).filter(x=>x.r<9);
   list.sort((a,b)=>a.r-b.r||(q?firstOf(a.id).localeCompare(firstOf(b.id),'ar'):((baseOrder.indexOf(a.id)+1||99)-(baseOrder.indexOf(b.id)+1||99))));
   const selNames=[...PF.sel].map(k=>chips.find(c=>c.key===k)?.label).filter(Boolean);
-  document.getElementById('pf-count').textContent=list.length+' عضو'+(selNames.length?' — '+selNames.join(' + '):'');
+  document.getElementById('pf-count').innerHTML=escapeHtml(list.length+' عضو'+(selNames.length?' — '+selNames.join(' + '):''))+'<span class="pf-key">👦 أولاد · 👧 بنات · 👶 أحفاد</span>';
   grid.innerHTML='';
   list.forEach(({id})=>{
     const m=FAM[id];
@@ -2177,9 +2180,9 @@ function filterProfiles(q){PF.q=q;buildProfiles();}
 function statsHTML(id){
   const s=famStats(id);if(!s.total)return'';
   const p=[];
-  if(s.sons)p.push(`<span>أولاد <b>${s.sons}</b></span>`);
-  if(s.daughters)p.push(`<span>بنات <b>${s.daughters}</b></span>`);
-  if(s.grand)p.push(`<span>أحفاد <b>${s.grand}</b></span>`);
+  if(s.sons)p.push(`<span title="أولاد">👦<b>${s.sons}</b></span>`);
+  if(s.daughters)p.push(`<span title="بنات">👧<b>${s.daughters}</b></span>`);
+  if(s.grand)p.push(`<span title="أحفاد">👶<b>${s.grand}</b></span>`);
   return `<div class="pc-stats">${p.join('')}</div>`;
 }
 /* نوع البطاقة (لون الإطار) */
