@@ -189,6 +189,30 @@ body{font-family:var(--ffb);background:var(--bg);color:var(--fg);display:flex;fl
 /* أيقونة المرسمة فوق يمين الصورة */
 .info-av-edit{position:absolute;top:-5px;right:-5px;width:24px;height:24px;padding:0;border-radius:50%;background:var(--gold);border:1.5px solid var(--card);display:flex;align-items:center;justify-content:center;gap:3px;cursor:pointer;color:#fff;box-shadow:0 1px 4px rgba(0,0,0,.25);z-index:2}
 .info-av-edit svg{width:13px;height:13px;flex:0 0 auto}
+.info-num{font:700 .62rem var(--ffb);color:var(--sepia);opacity:.65;margin-top:3px}
+.info-links{display:flex;flex-wrap:wrap;gap:5px;margin-top:4px}
+.info-links:empty{display:none}
+.rl-chip{display:inline-flex;align-items:center;gap:4px;border:1.5px dashed var(--rose);border-radius:20px;padding:1px 4px 1px 9px;font:700 .66rem var(--ffb);color:var(--sepia);background:var(--card)}
+.rl-chip button{border:none;background:none;color:#c0392b;font-size:.8rem;cursor:pointer;padding:0 3px;line-height:1}
+.sex-btn-r{flex:1.3}
+.rada-panel{margin-top:8px;border:1.5px dashed var(--gold);border-radius:10px;padding:8px;background:color-mix(in srgb,var(--gold) 6%,transparent)}
+.rada-panel[hidden]{display:none}
+.rada-q{width:100%;box-sizing:border-box;border:1px solid var(--border);border-radius:8px;padding:7px 9px;font:600 .8rem var(--ffb);background:var(--card);color:var(--fg)}
+.rada-results{max-height:180px;overflow-y:auto;margin-top:6px;display:flex;flex-direction:column;gap:4px}
+.rada-res{display:flex;align-items:center;gap:8px;border:1px solid var(--border);border-radius:9px;padding:5px 7px;background:var(--card);cursor:pointer;text-align:right;font:600 .76rem var(--ffb);color:var(--fg)}
+.rada-res.sel{border:2px solid var(--gold);background:color-mix(in srgb,var(--gold) 14%,var(--card))}
+.rada-res .ra{width:30px;height:30px;border-radius:50%;overflow:hidden;flex:0 0 auto;border:2px solid var(--blue)}
+.rada-res .ra.f{border-color:var(--rose)}
+.rada-res small{display:block;opacity:.65;font-size:.66rem}
+.rada-res .nm{flex:1;min-width:0}
+.rada-res .no{font:700 .62rem var(--ffb);background:var(--sepia);color:#F0D49A;border-radius:5px;padding:0 5px}
+.rada-new{display:flex;align-items:center;gap:6px;margin-top:8px;font:700 .68rem var(--ffb);color:var(--sepia)}
+.rada-new span{flex:1}
+.rada-new .sex-btn{flex:0 0 auto;padding:5px 12px}
+/* علامة الربط فوق يسار الصورة — تودّي للشخص الأصلي */
+.node-link-btn{position:absolute;top:-4px;left:-6px;width:22px;height:22px;border-radius:50%;background:var(--gold);border:1.5px solid var(--card);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;z-index:3;box-shadow:0 1px 4px rgba(0,0,0,.25)}
+.node-link-btn svg{width:12px;height:12px;fill:none;stroke:#fff;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+.node.has-back .node-link-btn{top:auto;bottom:-2px}
 .info-av-edit span{display:none}
 /* بدون صورة: زر واضح فوق الصورة مكتوب فيه «إضافة» */
 .info-av-edit.add{top:-11px;right:-2px;bottom:auto;left:auto;transform:none;width:auto;height:auto;border-radius:20px;padding:2px 8px 2px 7px;white-space:nowrap;font:700 .62rem var(--ffb)}
@@ -252,6 +276,7 @@ textarea.info-field-input{resize:vertical;min-height:46px}
 .pc-stats span{font:700 .56rem var(--ffb);background:var(--sand-mid);color:var(--sepia);border-radius:8px;padding:1px 6px;white-space:nowrap}
 .pc-stats span b{color:var(--gold)}
 .pc-stats span.tot{background:var(--gold);color:#fff}.pc-stats span.tot b{color:#fff}
+.pc-rada{font:700 .6rem var(--ffb);color:var(--rose);margin-top:2px}
 .pc-inc{display:inline-block;width:8px;height:8px;border-radius:50%;background:#d23b3b;margin-inline-start:4px;vertical-align:middle}
 .pc-branch{font-size:.57rem;color:var(--sepia);opacity:.5;margin-top:1px}
 .pc-edit-fab{position:absolute;top:5px;left:5px;width:20px;height:20px;border-radius:50%;background:transparent;border:1px solid color-mix(in srgb,var(--gold) 40%,transparent);cursor:pointer;display:flex;align-items:center;justify-content:center;opacity:.15;transition:opacity .2s}
@@ -381,6 +406,8 @@ textarea.form-input{resize:vertical;min-height:52px}
       <div class="info-name" id="info-name"></div>
       <div id="info-age-badge" style="font-size:.65rem;color:var(--gold);font-weight:700;margin-top:2px"></div>
       <div id="info-missing" class="info-missing" hidden></div>
+      <div id="info-num" class="info-num"></div>
+      <div id="info-links" class="info-links"></div>
     </div>
   </div>
   <input type="file" id="avatar-file-input" accept="image/*" onchange="handleAvatarUpload(event)">
@@ -456,6 +483,14 @@ textarea.form-input{resize:vertical;min-height:52px}
       <div style="display:flex;gap:8px">
         <button id="child-btn-m" onclick="toggleChildSex('m')" class="sex-btn sex-btn-m">طفل</button>
         <button id="child-btn-f" onclick="toggleChildSex('f')" class="sex-btn sex-btn-f">طفلة</button>
+        <button id="child-btn-r" onclick="toggleRadaPanel()" class="sex-btn sex-btn-r">🔗 بالرضاعة</button>
+      </div>
+      <div id="rada-panel" class="rada-panel" hidden>
+        <input id="rada-q" class="rada-q" type="search" dir="rtl" placeholder="ابحث بالاسم أو رقم العضو" oninput="renderRadaResults()">
+        <div id="rada-results" class="rada-results"></div>
+        <div class="rada-new"><span>من خارج العائلة؟ عضو جديد:</span>
+          <button type="button" id="rada-new-m" onclick="pickRadaNew('m')" class="sex-btn sex-btn-m">طفل</button>
+          <button type="button" id="rada-new-f" onclick="pickRadaNew('f')" class="sex-btn sex-btn-f">طفلة</button></div>
       </div>
     </div>
   </div>
@@ -554,7 +589,7 @@ let FAM = {
   bushra:{name:'بشرى',sex:'f',par:'zamil',children:[]},
 };
 
-function loadData(){try{const s=localStorage.getItem('fam_data');if(s)FAM=JSON.parse(s)}catch(e){}}
+function loadData(){try{const s=localStorage.getItem('fam_data');if(s)FAM=JSON.parse(s)}catch(e){}try{syncLinks();ensureNums();}catch(e){}}
 loadData();
 
 /* ══ السحابة: Supabase — كل البيانات مشتركة بين الكل وتتحدث مباشرة ══ */
@@ -636,7 +671,36 @@ function describeChanges(prev,cur){
 }
 function nameOfData(d,id){return (d&&(d.short||(d.name||'').split(' ')[0]))||id;}
 
+/* ══ رقم العضو + ربط الرضاعة بعضو موجود ══
+   الرابط = سجل صغير {link: رقم الشخص الأصلي} تحت اللي رضّعت؛ يطلع في الشجرة بإطار منقط وعلامة 🔗
+   بياناته (الاسم/الصورة/التواريخ) تنسخ من الأصلي تلقائياً، وما ينحسب في عدد الأعضاء */
+const isLink=id=>!!(FAM[id]&&FAM[id].link);
+const realId=id=>(FAM[id]&&FAM[id].link&&FAM[FAM[id].link])?FAM[id].link:id;
+function linksOf(id){return Object.keys(FAM).filter(k=>FAM[k].link===id);}
+/* يرقّم الأعضاء بنفس الترتيب على كل الأجهزة (زامل ← زوجاته ← الأبناء حسب الشجرة) */
+function ensureNums(){
+  let max=0;Object.values(FAM).forEach(m=>{if(m.num>max)max=m.num;});
+  const order=[];const seen=new Set();
+  const root=Object.keys(FAM).find(k=>FAM[k].role==='root');
+  const q=root?[root]:[];
+  while(q.length){const id=q.shift();if(seen.has(id)||!FAM[id])continue;seen.add(id);order.push(id);
+    [...(FAM[id].spouseIds||[]),...(FAM[id].children||[])].forEach(k=>{if(!seen.has(k))q.push(k);});}
+  Object.keys(FAM).sort().forEach(k=>{if(!seen.has(k))order.push(k);});
+  let changed=false;
+  order.forEach(id=>{const m=FAM[id];if(!m||m.link||m.num)return;m.num=++max;changed=true;});
+  return changed;
+}
+/* ينسخ بيانات الشخص الأصلي لروابطه */
+function syncLinks(){
+  const LINK_SHARED=['short','sex','photo','birth','death','bio'];
+  Object.keys(FAM).forEach(k=>{const m=FAM[k];if(!m.link)return;const t=FAM[m.link];if(!t)return;
+    LINK_SHARED.forEach(f=>{if(t[f]===undefined||t[f]===null||t[f]==='')delete m[f];else m[f]=t[f];});
+    m.name=(()=>{try{return effectiveFullName(m.link);}catch(e){return t.name;}})()||t.name;
+    m.rada=true;m.relType=m.sex==='f'?'daughter-rada':'son-rada';m.children=[];m.spouseIds=[];});
+}
+const memberNum=id=>{const m=FAM[realId(id)];return m&&m.num?'#'+String(m.num).padStart(3,'0'):'';};
 function saveData(){
+  try{syncLinks();ensureNums();}catch(e){console.error(e)}
   try{localStorage.setItem('fam_data',JSON.stringify(FAM))}catch(e){}
   pushToCloud();
   setTimeout(()=>{try{refreshShown()}catch(e){console.error(e)}},0); /* التغيير يبان فوراً */
@@ -737,6 +801,8 @@ async function pullFromCloud(){
   const next={};data.forEach(r=>next[r.id]=r.data);
   FAM=next;cloudIds=new Set(Object.keys(FAM));
   cloudJSON={};data.forEach(r=>cloudJSON[r.id]=JSON.stringify(r.data));
+  /* أرقام الأعضاء (نفس الترتيب في كل الأجهزة) + نسخ بيانات الروابط */
+  try{syncLinks();if(ensureNums()){pushToCloud();}}catch(e){console.error(e)}
   try{localStorage.setItem('fam_data',JSON.stringify(FAM))}catch(e){}
   rerenderCurrent();
   refreshShown();
@@ -922,6 +988,12 @@ function createNode(id){
     }
   }
   awrap.appendChild(ring);awrap.appendChild(infoBtn);awrap.appendChild(backHint);
+  if(m.link){
+    const lb=document.createElement('button');lb.className='node-link-btn';lb.title='اذهب لمكانه الأصلي';lb.setAttribute('aria-label','اذهب لمكانه الأصلي');
+    lb.innerHTML='<svg viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.66 0l3-3a4 4 0 0 0-5.66-5.66l-1 1"/><path d="M14 10a4 4 0 0 0-5.66 0l-3 3a4 4 0 0 0 5.66 5.66l1-1"/></svg>';
+    lb.onclick=e=>{e.stopPropagation();goToInTree(m.link);};
+    awrap.appendChild(lb);
+  }
   /* اسم واحد فقط */
   const lbl=document.createElement('div');lbl.className='node-name';setNameWithRip(lbl,id,shortName(m.name,id));
   div.appendChild(awrap);div.appendChild(lbl);
@@ -1592,6 +1664,7 @@ function updateBirthFromAge(){
 }
 
 function openInfoPanel(id){
+  id=realId(id);   /* الرابط يفتح الشخص الأصلي — التعديل مكان واحد */
   const m=FAM[id];
   editingId=id;pendingPhoto=null;
   /* صورة */
@@ -1601,6 +1674,8 @@ function openInfoPanel(id){
   /* اسم في رأس النافذة */
   const nameEl=document.getElementById('info-name');
   if(nameEl) setNameWithRip(nameEl,id,m.short||shortName(m.name,null)||m.name);
+  {const ne=document.getElementById('info-num');if(ne)ne.innerHTML=m.num?'رقم العضو <bdi dir="ltr">'+memberNum(id)+'</bdi>':'';}
+  renderInfoLinks(id);
   {const mi=document.getElementById('info-missing');const miss=missingFields(id);
    if(mi){mi.textContent=miss.length?'⚠ ناقص: '+miss.join('، '):'';mi.hidden=!miss.length;}}
   /* حقول التعديل */
@@ -1667,7 +1742,8 @@ function openInfoPanel(id){
   document.getElementById('add-child-row').style.display='';
   const addSec=document.getElementById('add-child-section');
   if(addSec) addSec.style.display='';
-  ['spouse-btn-m','spouse-btn-f','child-btn-m','child-btn-f'].forEach(id=>{document.getElementById(id)?.classList.remove('selected')});
+  ['spouse-btn-m','spouse-btn-f','child-btn-m','child-btn-f','child-btn-r','rada-new-m','rada-new-f'].forEach(id=>{document.getElementById(id)?.classList.remove('selected')});
+  pendingRada=null;{const rp=document.getElementById('rada-panel');if(rp)rp.hidden=true;}
   const p=document.getElementById('info-popup');
   p.classList.remove('hidden');
 }
@@ -1727,6 +1803,7 @@ function kidsBlockingDelete(id){
 }
 /* قاعدة: ما ينحذف أحد عنده أبناء — لازم ينحذفون أو ينقلون أول */
 function requestDelete(){
+  {const ls=linksOf(editingId);if(ls.length){showToast('⛔ مربوط بالرضاعة عند '+ls.map(l=>firstOf(FAM[l].mother||FAM[l].par)).join('، ')+' — فك الربط أول (✕ جنب الرضاعة)');return;}}
   const kids=kidsBlockingDelete(editingId);
   if(kids.length){
     const names=kids.slice(0,4).map(k=>FAM[k].short||shortName(FAM[k].name,k)).join('، ')+(kids.length>4?' …':'');
@@ -1750,7 +1827,7 @@ function confirmDelete(){
   if(!editingId)return;
   const m=FAM[editingId];
   if(!m||m.role==='root')return;
-  if(kidsBlockingDelete(editingId).length){requestDelete();return;}
+  if(kidsBlockingDelete(editingId).length||linksOf(editingId).length){requestDelete();return;}
   // remove from parent's children or spouseIds
   const parId=m.par;
   if(parId&&FAM[parId]){
@@ -1974,9 +2051,10 @@ function directKids(id){
 }
 /* إحصائية الشخص: أبناء، بنات، أحفاد (كل اللي تحت الأبناء) */
 function famStats(id){
-  const kids=directKids(id);
+  /* الرابط والشخص الأصلي = شخص واحد */
+  const kids=[...new Set(directKids(id).map(realId))];
   const seen=new Set(kids);let grand=0;
-  const walk=k=>directKids(k).forEach(g=>{if(seen.has(g))return;seen.add(g);grand++;walk(g);});
+  const walk=k=>directKids(k).map(realId).forEach(g=>{if(seen.has(g))return;seen.add(g);grand++;walk(g);});
   kids.forEach(walk);
   const sons=kids.filter(k=>FAM[k].sex!=='f').length;
   return{sons,daughters:kids.length-sons,grand,total:kids.length+grand};
@@ -2001,8 +2079,9 @@ function profileChips(){
     chips.push({key:'w:'+w,g:'lin',label:firstOf(w),test:id=>kids.has(id)&&!FAM[id].rada});
   });
   /* الرضاعة: أبناء زامل بالرضاعة — أحفاد الرضاعة: أبناء أبناء زامل بالرضاعة */
-  chips.push({key:'rada',g:'lin',label:'الرضاعة',test:id=>!!FAM[id].rada&&notSpouse(id)&&zDirect.has(id)});
-  chips.push({key:'rada2',g:'lin',label:'أحفاد الرضاعة',test:id=>!!FAM[id].rada&&notSpouse(id)&&!zDirect.has(id)});
+  /* الرضاعة تشمل المربوطين برقم العضو (مثل حسام بن عبدالعزيز اللي رضّعته ليلى) */
+  chips.push({key:'rada',g:'lin',label:'الرضاعة',test:id=>notSpouse(id)&&((!!FAM[id].rada&&zDirect.has(id))||linksOf(id).some(l=>zDirect.has(l)))});
+  chips.push({key:'rada2',g:'lin',label:'أحفاد الرضاعة',test:id=>notSpouse(id)&&((!!FAM[id].rada&&!zDirect.has(id))||linksOf(id).some(l=>!zDirect.has(l)))});
   chips.push({key:'m',g:'sex',label:'الأولاد',test:id=>notSpouse(id)&&FAM[id].sex!=='f'});
   chips.push({key:'f',g:'sex',label:'البنات',test:id=>notSpouse(id)&&FAM[id].sex==='f'});
   chips.push({key:'alive',g:'life',label:'الأحياء',test:id=>!isDeceased(id)});
@@ -2014,7 +2093,7 @@ function buildProfiles(){
   const grid=document.getElementById('profiles-grid');
   const chips=profileChips();
   [...PF.sel].forEach(k=>{if(!chips.some(c=>c.key===k))PF.sel.delete(k);});
-  const ids=Object.keys(FAM);
+  const ids=Object.keys(FAM).filter(k=>!FAM[k].link);
   const box=document.getElementById('pf-chips');const sx=box.scrollLeft;
   let html=`<button type="button" class="pf-chip${PF.sel.size?'':' on'}" data-k="all">الكل <b>${ids.length}</b></button>`,lastG='';
   chips.forEach(c=>{
@@ -2055,7 +2134,7 @@ function buildProfiles(){
     card.innerHTML=`<div class="${avcls}${radaCls}">${avatarHTML(id)}</div>
       <div class="pc-name">${escapeHtml(effectiveFullName(id))}${isDeceased(id)?`&zwnj;<span class="rip">${ripText(id)}</span>`:''}</div>
       <div class="pc-role">${m.role==='root'?'الجد الأكبر':m.role==='wife'?'زوجة':(m.rada?(m.sex==='f'?'رضاعة أنثى':'رضاعة ذكر'):getNasab(id))}</div>
-      <div class="pc-branch">${getBranch(id)}</div>${statsHTML(id)}`;
+      <div class="pc-branch">${getBranch(id)}</div>${linksOf(id).map(l=>`<div class="pc-rada">🤱 ${m.sex==='f'?'ابنة':'ابن'} رضاعة: ${escapeHtml(firstOf(FAM[l].mother||FAM[l].par)||'')}</div>`).join('')}${statsHTML(id)}`;
     if(missingFields(id).length)card.querySelector('.pc-name').insertAdjacentHTML('beforeend','<span class="pc-inc" title="بيانات ناقصة"></span>');
     card.addEventListener('click',()=>goToInTree(id));
     grid.appendChild(card);
@@ -2541,6 +2620,28 @@ function saveEdit(){
     /* الاسم الكامل تلقائي: طفل عبدالحميد زامل نحاس */
     FAM[chId].name=nasabFullName(chId)||first;
   }
+  /* الرضاعة: نفس مكان المولود (عند الأب/البنت، والأم اللي رضّعت) */
+  if(pendingRada&&(pendingRada.link||pendingRada.sex)){
+    const ed=FAM[editingId];
+    let holder=editingId, mother=null;
+    if(ed.role==='wife'&&ed.sex==='m'&&FAM[ed.par]) holder=ed.par;
+    else if(ed.role==='wife'&&ed.sex==='f'){
+      const own=(ed.par&&FAM[ed.par])?ed.par:Object.keys(FAM).find(k=>(FAM[k].children||[]).includes(editingId)||(FAM[k].spouseIds||[]).includes(editingId));
+      if(own&&!(FAM[own].children||[]).includes(editingId)){holder=own;mother=editingId;}
+    }
+    const rid=(pendingRada.link?'lk_':'rd_')+editingId+'_'+Date.now();
+    if(pendingRada.link){
+      FAM[rid]={link:pendingRada.link,par:holder,rada:true,children:[],spouseIds:[]};
+    }else{
+      const sx=pendingRada.sex,first=sx==='f'?'طفلة':'طفل';
+      FAM[rid]={name:first,short:first,sex:sx,rada:true,relType:sx==='f'?'daughter-rada':'son-rada',par:holder,children:[],spouseIds:[],photo:null};
+    }
+    if(mother)FAM[rid].mother=mother;
+    if(!FAM[holder].children)FAM[holder].children=[];
+    FAM[holder].children.push(rid);
+    syncLinks();
+    pendingRada=null;
+  }
 
   saveData();
 
@@ -2578,6 +2679,7 @@ function toggleSpouseSex(sex){
 }
 
 function toggleChildSex(sex){
+  if(pendingRada||!document.getElementById('rada-panel').hidden){pendingRada=null;document.getElementById('rada-panel').hidden=true;document.getElementById('child-btn-r').classList.remove('selected');}
   if(selectedChildSex===sex){
     selectedChildSex=null;
     document.getElementById('child-btn-m').classList.remove('selected');
@@ -2587,6 +2689,57 @@ function toggleChildSex(sex){
     document.getElementById('child-btn-m').classList.toggle('selected', sex==='m');
     document.getElementById('child-btn-f').classList.toggle('selected', sex==='f');
   }
+}
+
+/* ── الرضاعة: ربط عضو موجود أو عضو جديد من خارج العائلة ── */
+let pendingRada=null; /* {link:id} أو {sex:'m'|'f'} */
+function toggleRadaPanel(){
+  const pn=document.getElementById('rada-panel');const open=pn.hidden;
+  pn.hidden=!open;document.getElementById('child-btn-r').classList.toggle('selected',open);
+  if(open){selectedChildSex=null;['child-btn-m','child-btn-f'].forEach(i=>document.getElementById(i).classList.remove('selected'));
+    document.getElementById('rada-q').value='';renderRadaResults();}
+  else{pendingRada=null;}
+}
+function radaCandidates(){
+  const ed=editingId;
+  const blocked=new Set([ed,...linksOf(ed)]);
+  /* ما ينربط: زامل وزوجاته، والأزواج، والروابط نفسها، واللي مربوط أصلاً عند نفس الشخص */
+  const holderKids=new Set(Object.keys(FAM).filter(k=>FAM[k].link&&(FAM[k].par===ed||FAM[k].mother===ed)).map(k=>FAM[k].link));
+  return Object.keys(FAM).filter(k=>{const m=FAM[k];return !m.link&&m.role!=='root'&&m.role!=='wife'&&!blocked.has(k)&&!holderKids.has(k);});
+}
+function renderRadaResults(){
+  const q=normAr(document.getElementById('rada-q').value||'').replace(/^#/,'');
+  const box=document.getElementById('rada-results');
+  let list=radaCandidates().map(id=>({id,f:normAr(firstOf(id)),full:normAr(effectiveFullName(id)),n:String(FAM[id].num||'')}));
+  if(q){list=list.filter(x=>x.f.startsWith(q)||x.full.includes(q)||x.n===q.replace(/^0+/,''));
+    list.sort((a,b)=>(b.f.startsWith(q)-a.f.startsWith(q))||a.f.localeCompare(b.f,'ar'));}
+  else list.sort((a,b)=>a.f.localeCompare(b.f,'ar'));
+  list=list.slice(0,30);
+  box.innerHTML=list.length?list.map(x=>{const m=FAM[x.id];
+    return `<button type="button" class="rada-res${pendingRada&&pendingRada.link===x.id?' sel':''}" data-id="${x.id}"><span class="ra${m.sex==='f'?' f':''}">${avatarHTML(x.id)}</span><span class="nm">${escapeHtml(effectiveFullName(x.id))}<small>${escapeHtml(getNasab(x.id)||'')}${isDeceased(x.id)?' · '+ripText(x.id):''}</small></span><span class="no">${memberNum(x.id)}</span></button>`;}).join('')
+    :'<div style="font:600 .7rem var(--ffb);opacity:.6;padding:6px">ما فيه أحد بهالاسم في العائلة — إذا من خارج العائلة اختر عضو جديد تحت</div>';
+  box.querySelectorAll('.rada-res').forEach(b=>b.onclick=()=>{pendingRada={link:b.dataset.id};
+    ['rada-new-m','rada-new-f'].forEach(i=>document.getElementById(i).classList.remove('selected'));renderRadaResults();});
+}
+function pickRadaNew(sex){
+  pendingRada={sex};
+  document.getElementById('rada-new-m').classList.toggle('selected',sex==='m');
+  document.getElementById('rada-new-f').classList.toggle('selected',sex==='f');
+  renderRadaResults();
+}
+/* علامات الرضاعة في نافذة الشخص: «رضّعته: ليلى ✕» */
+function renderInfoLinks(id){
+  const box=document.getElementById('info-links');if(!box)return;
+  const ls=linksOf(id);
+  box.innerHTML=ls.map(l=>{const L=FAM[l];const who=L.mother||L.par;
+    return `<span class="rl-chip">🤱 ${FAM[id].sex==='f'?'رضّعتها':'رضّعته'}: ${escapeHtml(firstOf(who)||'')}<button type="button" title="فك الربط" data-l="${l}">✕</button></span>`;}).join('');
+  box.querySelectorAll('button').forEach(b=>b.onclick=e=>{e.stopPropagation();unlinkRada(b.dataset.l);});
+}
+function unlinkRada(l){
+  const L=FAM[l];if(!L)return;
+  if(!confirm('فك ربط الرضاعة؟ (الشخص نفسه ما ينحذف)'))return;
+  Object.keys(FAM).forEach(k=>{FAM[k].children=(FAM[k].children||[]).filter(c=>c!==l);});
+  delete FAM[l];saveData();renderInfoLinks(editingId);rerenderCurrent();showToast('✓ انفك الربط');
 }
 
 /* ── إضافة زوج/ة (تُعلَّق حتى الحفظ) ── */
