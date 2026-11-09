@@ -94,10 +94,10 @@ body{font-family:var(--ffb);background:var(--bg);color:var(--fg);display:flex;fl
 .node.top .avatar-ring{border-width:4px}
 .node.top .node-name{font-size:.9rem;max-width:130px}
 /* نقطة برتقالية: بيانات ناقصة */
-.incomplete-dot{position:absolute;bottom:1px;left:1px;width:17px;height:17px;border-radius:50%;background:#E8892B;border:2.5px solid var(--bg);
-  color:#fff;font:700 10px/1 var(--ffb);display:flex;align-items:center;justify-content:center;z-index:3;pointer-events:none}
-.node.top .incomplete-dot{width:20px;height:20px;font-size:12px}
-.info-missing{margin-top:4px;background:color-mix(in srgb,#E8892B 14%,transparent);border:1px solid #E8892B;color:#E8892B;border-radius:7px;padding:3px 8px;font-size:.68rem;font-weight:700;display:inline-block}
+.incomplete-dot{position:absolute;top:2px;right:2px;width:12px;height:12px;border-radius:50%;background:#E03131;border:2px solid var(--bg);z-index:4;pointer-events:none}
+/* الشخص المحدد: النقطة تنتقل لزاوية زر ⓘ */
+.node.focus .incomplete-dot{top:-7px;right:11px}
+.info-missing{margin-top:4px;background:color-mix(in srgb,#E03131 14%,transparent);border:1px solid #E03131;color:#E86060;border-radius:7px;padding:3px 8px;font-size:.68rem;font-weight:700;display:inline-block}
 .avatar-ring img{width:100%;height:100%;object-fit:cover;border-radius:50%}
 .default-avatar{width:70%;height:70%;opacity:.6}
 /* 💍 بادج الزوجة — SVG لضمان ظهوره على كل المتصفحات */
@@ -751,7 +751,7 @@ window.addEventListener('resize',()=>{
         showSpouseFor(cur);
       },150);
     } else {
-      setTimeout(()=>showSpouseFor(cur),200);
+      {const seq=renderSeq;setTimeout(()=>{if(seq===renderSeq)showSpouseFor(cur);},200);}
     }
   },200);
 });
@@ -882,7 +882,7 @@ function showSpouseView(spId,clickedId){
   const kids=kidsOfCouple(husbandId,wifeId);
   if(kids.length){
     kids.forEach(k=>createNode(k));placeNodes(kids,husbandId);
-    setTimeout(()=>drawKidLines(husbandId,kids,()=>false),150);
+    {const seq=renderSeq;setTimeout(()=>{if(seq===renderSeq)drawKidLines(husbandId,kids,()=>false);},150);}
   }
   setTop([ownerId,spId]);
   markFocus(clickedId||(owner.sex==='f'?ownerId:spId),ownerId);
@@ -967,7 +967,7 @@ function updateIncomplete(id){
   let dot=wrap.querySelector('.incomplete-dot');
   const miss=missingFields(id);
   if(miss.length){
-    if(!dot){dot=document.createElement('span');dot.className='incomplete-dot';dot.textContent='!';wrap.appendChild(dot);}
+    if(!dot){dot=document.createElement('span');dot.className='incomplete-dot';wrap.appendChild(dot);}
     dot.title='ناقص: '+miss.join('، ');
   }else if(dot)dot.remove();
 }
@@ -991,7 +991,9 @@ function markFocus(id,backId=id){
   if(history.length&&backId&&nodeEls[backId])nodeEls[backId].classList.add('has-back');
 }
 
+let renderSeq=0;
 function hideAll(){
+  renderSeq++;
   /* كل ما تفتح شخص جديد: ارجع لأعلى الشاشة */
   try{stage.scrollTo({top:0,left:0,behavior:'smooth'});}catch(e){stage.scrollTop=0;}
   try{window.scrollTo({top:0,behavior:'smooth'});}catch(e){}
@@ -1032,7 +1034,7 @@ function onNodeClick(id){
     createNode(id);
     nodeEls[id].style.left=w/2+'px';nodeEls[id].style.top=h*0.5+'px';
     nodeEls[id].classList.remove('hidden');nodeEls[id].classList.add('visible');
-    setTimeout(()=>showSpouseFor(id),200);
+    {const seq=renderSeq;setTimeout(()=>{if(seq===renderSeq)showSpouseFor(id);},200);}
     setTop(id);
     markFocus(id);
     backBtn.classList.remove('hidden');
@@ -1052,7 +1054,9 @@ function expandNode(id){
   nodeEls[id].style.left=w/2+'px';nodeEls[id].style.top=h*0.17+'px';
   nodeEls[id].classList.remove('hidden');nodeEls[id].classList.add('visible');
   kids.forEach(kid=>createNode(kid));placeNodes(kids,id);
+  const seqE=renderSeq;
   setTimeout(()=>{
+    if(seqE!==renderSeq)return;
     drawKidLines(id,kids,kid=>multi||FAM[kid]?.role==='wife');
     if(!multi) showSpouseFor(id);
   },150);
