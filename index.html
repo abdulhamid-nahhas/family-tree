@@ -289,7 +289,7 @@ textarea.form-input{resize:vertical;min-height:52px}
 <div class="info-popup hidden" id="info-popup">
   <div class="info-av-row">
     <div class="info-av-wrap">
-      <div class="info-av" id="info-av"></div>
+      <div class="info-av" id="info-av" onclick="openPhotoViewer()" style="cursor:zoom-in"></div>
       <div class="info-av-edit" onclick="triggerAvatarUpload()" title="تغيير الصورة">✏️</div>
     </div>
     <div class="info-meta">
@@ -1260,6 +1260,33 @@ function closeInfo(){
   cancelDelete();
 }
 
+/* ══ عرض الصورة كاملة: من نافذة المعلومات، تكبير بإصبعين، ✕ أو ضغطة برّا للإغلاق ══ */
+function openPhotoViewer(){
+  const src=pendingPhoto||(editingId&&FAM[editingId]?.photo);
+  if(!src||!/^(data:image|https?:)/.test(src))return; /* أيقونة بدون صورة حقيقية */
+  const v=document.createElement('div');v.id='photo-viewer';
+  v.style.cssText='position:fixed;inset:0;z-index:1100;background:rgba(10,8,5,.94);display:flex;align-items:center;justify-content:center;touch-action:none';
+  v.innerHTML=`<img src="${src}" style="max-width:94vw;max-height:84vh;border-radius:14px;box-shadow:0 8px 40px rgba(0,0,0,.6);transform-origin:center;transition:transform .15s">
+    <button aria-label="إغلاق" style="position:absolute;top:14px;left:14px;width:44px;height:44px;border-radius:50%;border:none;background:rgba(255,255,255,.15);color:#fff;font-size:1.4rem;cursor:pointer">✕</button>`;
+  document.body.appendChild(v);
+  const img=v.querySelector('img');let sc=1,tx=0,ty=0,pin=null,pan=null;
+  const set=()=>{img.style.transform=`translate(${tx}px,${ty}px) scale(${sc})`;};
+  const close=()=>v.remove();
+  v.querySelector('button').onclick=close;
+  v.addEventListener('click',e=>{if(e.target===v)close();});
+  v.addEventListener('wheel',e=>{e.preventDefault();sc=Math.max(1,Math.min(5,sc*(e.deltaY<0?1.15:.87)));if(sc===1){tx=ty=0;}set();},{passive:false});
+  v.addEventListener('touchstart',e=>{
+    img.style.transition='none';
+    if(e.touches.length===2){const[a,b]=e.touches;pin={d:Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY),s:sc};pan=null;}
+    else if(e.touches.length===1&&sc>1){pan={x:e.touches[0].clientX-tx,y:e.touches[0].clientY-ty};}
+  },{passive:true});
+  v.addEventListener('touchmove',e=>{
+    if(pin&&e.touches.length===2){const[a,b]=e.touches;sc=Math.max(1,Math.min(5,pin.s*Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY)/pin.d));set();e.preventDefault();}
+    else if(pan&&e.touches.length===1){tx=e.touches[0].clientX-pan.x;ty=e.touches[0].clientY-pan.y;set();e.preventDefault();}
+  },{passive:false});
+  v.addEventListener('touchend',e=>{if(!e.touches.length){pin=null;pan=null;img.style.transition='transform .15s';if(sc<=1.02){sc=1;tx=ty=0;set();}}});
+}
+
 /* أبناء الشخص — للزوجة: أبناؤها من زوجها أو المسجلين عندها */
 function kidsBlockingDelete(id){
   const m=FAM[id];if(!m)return[];
@@ -1727,11 +1754,14 @@ function drawCrop(cv){
 
 function applyCrop(cv,modal){
   if(!cv)return;
-  const out=document.createElement('canvas');out.width=200;out.height=200;
+  /* نحفظ الصورة بدقة 560 بكسل من الصورة الأصلية — عشان تطلع واضحة لما تتكبّر */
+  const OUT=560,k=OUT/260;
+  const out=document.createElement('canvas');out.width=OUT;out.height=OUT;
   const ctx=out.getContext('2d');
-  ctx.beginPath();ctx.arc(100,100,100,0,Math.PI*2);ctx.clip();
-  ctx.drawImage(cv,0,0,260,260,0,0,200,200);
-  const dataUrl=out.toDataURL('image/jpeg',0.85);
+  ctx.fillStyle='#fff';ctx.fillRect(0,0,OUT,OUT);
+  if(cropImg) ctx.drawImage(cropImg,cropX*k,cropY*k,cropImg.width*cropScale*k,cropImg.height*cropScale*k);
+  else ctx.drawImage(cv,0,0,260,260,0,0,OUT,OUT);
+  const dataUrl=out.toDataURL('image/jpeg',0.82);
   pendingPhoto=dataUrl;
   /* تحديث فوري للصورة في النافذة */
   const avEl=document.getElementById('info-av');
@@ -2003,7 +2033,7 @@ function showToast(msg){const t=document.getElementById('toast');t.textContent=m
   /* فتح شخص جديد: الهيدر يرجع كامل */
   window.resetHeader=()=>{offset=0;hdr.style.transition='margin-top .2s ease';apply();};
   const prev=new WeakMap();
-  const skip=el=>el.closest&&el.closest('#info-popup,#crop-modal,#photo-fallback,.modal-box');
+  const skip=el=>el.closest&&el.closest('#info-popup,#crop-modal,#photo-fallback,#photo-viewer,.modal-box');
   document.addEventListener('scroll',e=>{
     const el=e.target===document?document.scrollingElement:e.target;
     if(!el||el.nodeType!==1||skip(el))return;
