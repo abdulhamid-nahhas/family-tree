@@ -52,6 +52,9 @@ body.hdr-hidden .hdr{margin-top:calc(-1 * var(--hdrH,0px))}
   cursor:pointer;border-bottom:3px solid transparent;transition:all .2s;white-space:nowrap}
 .tab-btn.active{opacity:1;border-bottom-color:var(--gold);background:color-mix(in srgb,var(--gold) 8%,transparent)}
 
+.person-bar{background:var(--bg);border-bottom:1px solid var(--border);flex-shrink:0;padding:7px 14px;text-align:center;
+  font-family:var(--ffb);font-weight:700;font-size:.95rem;color:var(--gold);line-height:1.5}
+.person-bar[hidden]{display:none}
 .legend-bar{background:var(--bg);border-bottom:1px solid var(--border);flex-shrink:0;
   padding:4px 12px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:center}
 .leg{display:flex;align-items:center;gap:4px;font-size:.62rem;color:var(--sepia);opacity:.8}
@@ -253,6 +256,8 @@ textarea.form-input{resize:vertical;min-height:52px}
   <div class="leg"><div style="width:26px;height:0;border-top:2.5px solid var(--gold-lt);opacity:.85"></div>ابن/ـة</div>
   <div class="leg"><div style="width:26px;height:0;border-top:2.5px dashed var(--gold-lt);opacity:.85"></div>زوج/ـة</div>
 </div>
+<!-- الاسم الكامل للشخص المحدد -->
+<div class="person-bar" id="person-bar" hidden></div>
 
 <!-- TAB 1 -->
 <div class="panel active" id="panel-drill">
@@ -866,14 +871,52 @@ function showSpouseView(spId,clickedId){
 
 /* الشخص المعروض فوق: يظهر عليه زر الرجوع دايماً */
 /* ⓘ على الشخص اللي ضغطت عليه فقط — والرجوع على الشخص اللي فوق */
+/* ══ الاسم الكامل: الاسم + اسم الأب + اسم الجد ... + نحاس (بدون "بن") ══ */
+function husbandOf(wid){
+  const w=FAM[wid];if(!w)return null;
+  if(w.par&&FAM[w.par])return w.par;
+  return Object.keys(FAM).find(k=>(FAM[k].children||[]).includes(wid)||(FAM[k].spouseIds||[]).includes(wid))||null;
+}
+/* الأب الحقيقي للشخص: لو مسجّل عند زوجة → زوجها، لو مسجّل عند بنت → زوج البنت */
+function fatherOf(id){
+  const m=FAM[id];if(!m||!m.par)return null;
+  const p=FAM[m.par];if(!p)return null;
+  if(p.role==='wife') return p.sex==='f'?husbandOf(m.par):m.par;
+  if(p.sex==='f'){const h=wivesOf(m.par);return h.length?h[0]:null;}
+  return m.par;
+}
+function fullName(id){
+  const m=FAM[id];if(!m)return '';
+  const first=x=>(FAM[x].short||shortName(FAM[x].name,x)||'').trim();
+  if(m.role==='root')return /نحاس/.test(m.name||'')?m.name:first(id)+' نحاس';
+  if(m.role==='wife'||m.rada)return m.name||'';
+  const parts=[first(id)];
+  let cur=fatherOf(id),guard=0;
+  while(cur&&guard++<30){
+    const c=FAM[cur];
+    if(c.role==='wife'){parts.push(c.name);return parts.join(' ');} /* زوج بنت من خارج العائلة: اسمه كامل وخلاص */
+    parts.push(first(cur));
+    if(c.role==='root')return parts.join(' ')+' نحاس';
+    cur=fatherOf(cur);
+  }
+  return parts.join(' ');
+}
+function showPersonBar(id){
+  const bar=document.getElementById('person-bar');if(!bar)return;
+  const t=id&&FAM[id]?fullName(id):'';
+  bar.textContent=t;bar.hidden=!t;
+}
+
 /* ينقل زر ⓘ للشخص اللي ضغطت عليه — بدون ما يفتح المعلومات */
 function setInfoOn(id){
   document.querySelectorAll('.node.focus').forEach(n=>n.classList.remove('focus'));
   if(nodeEls[id])nodeEls[id].classList.add('focus');
+  showPersonBar(id);
 }
 function markFocus(id,backId=id){
   document.querySelectorAll('.node.focus,.node.has-back').forEach(n=>n.classList.remove('focus','has-back'));
   [].concat(id).forEach(x=>{if(x&&nodeEls[x])nodeEls[x].classList.add('focus');});
+  showPersonBar([].concat(id)[0]);
   if(history.length&&backId&&nodeEls[backId])nodeEls[backId].classList.add('has-back');
 }
 
