@@ -152,6 +152,8 @@ body{font-family:var(--ffb);background:var(--bg);color:var(--fg);display:flex;fl
 .log-me{font:700 .78rem var(--ffb);color:var(--gold)}
 .log-filter{padding:6px 10px;border-radius:10px;border:1.5px solid var(--border);background:var(--sand);color:var(--fg);font-family:var(--ffb);font-size:.8rem}
 .log-list{display:flex;flex-direction:column;gap:6px}
+.log-row.log-upd{background:color-mix(in srgb,var(--gold) 12%,var(--card));border-color:color-mix(in srgb,var(--gold) 55%,transparent)}
+.log-row.log-upd .log-actor{color:var(--gold)}
 .log-row{display:grid;grid-template-columns:auto 1fr;gap:2px 10px;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:8px 10px;font-family:var(--ffb)}
 .log-ico{grid-row:span 2;font-size:1.1rem;align-self:center}
 .log-top{display:flex;gap:6px;align-items:baseline;flex-wrap:wrap;font-size:.8rem}
@@ -755,7 +757,7 @@ async function loadLog(){
   showMe();renderLog();
 }
 function escapeHtml(t){return String(t??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
-const LOG_ICON={'تسجيل':'👤','إضافة':'➕','تعديل':'✏️','حذف':'🗑'};
+const LOG_ICON={'تسجيل':'👤','إضافة':'➕','تعديل':'✏️','حذف':'🗑','تحديث':'🆕'};
 function renderLog(){
   const who=document.getElementById('log-filter').value;
   const rows=LOG.filter(r=>!who||r.actor===who);
@@ -764,7 +766,7 @@ function renderLog(){
   const fmt=new Intl.DateTimeFormat('ar-SA-u-ca-gregory-nu-latn',{day:'numeric',month:'short',hour:'numeric',minute:'2-digit',timeZone:'Asia/Riyadh'});
   box.innerHTML=rows.map(r=>{
     const mine=r.action==='تسجيل'&&r.device_id===ME.device;
-    return `<div class="log-row"><div class="log-ico">${LOG_ICON[r.action]||'•'}</div>
+    return `<div class="log-row${r.action==='تحديث'?' log-upd':''}"><div class="log-ico">${LOG_ICON[r.action]||'•'}</div>
       <div class="log-top"><span class="log-actor">${escapeHtml(r.actor)}</span><span class="log-time">${fmt.format(new Date(r.at))}</span>
       ${mine?`<button class="log-del" onclick="deleteMyName()">حذف اسمي</button>`:''}</div>
       <div class="log-detail">${escapeHtml(r.details)}</div></div>`;}).join('');
