@@ -83,15 +83,16 @@ body{font-family:var(--ffb);background:var(--bg);color:var(--fg);display:flex;fl
 .node.hidden{opacity:0;pointer-events:none;transform:translate(-50%,-50%) scale(.4)}
 .node.visible{opacity:1;transform:translate(-50%,-50%) scale(1)}
 .avatar-wrap{position:relative}
-.avatar-ring{width:58px;height:58px;border-radius:50%;border:3px solid var(--blue);overflow:hidden;background:var(--sand-mid);display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.12);transition:box-shadow .2s}
+.avatar-ring{width:68px;height:68px;border-radius:50%;border:3px solid var(--blue);overflow:hidden;background:var(--sand-mid);display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.12);transition:box-shadow .2s}
 .avatar-ring.female{border-color:var(--rose)}
 .avatar-ring.rada{border-style:dashed!important}
 .avatar-ring.rada:not(.female){border-color:var(--blue)!important}
 .avatar-ring.rada.female{border-color:var(--rose)!important}
-.avatar-ring.root{width:70px;height:70px;border-width:4px;border-color:var(--sepia)!important}
-.avatar-wrap.root-wrap{width:70px;height:70px}
-.avatar-wrap.big{width:70px;height:70px}
-.avatar-ring.big{width:70px;height:70px;border-width:4px}
+.avatar-ring.root{border-color:var(--sepia)!important}
+/* كل الدوائر بنفس المقاس — والشخص المفتوح فوق (ومعه زوجه/زوجته) أكبر */
+.node.top .avatar-wrap,.node.top .avatar-ring{width:86px;height:86px}
+.node.top .avatar-ring{border-width:4px}
+.node.top .node-name{font-size:.9rem;max-width:130px}
 .avatar-ring img{width:100%;height:100%;object-fit:cover;border-radius:50%}
 .default-avatar{width:70%;height:70%;opacity:.6}
 /* 💍 بادج الزوجة — SVG لضمان ظهوره على كل المتصفحات */
@@ -107,7 +108,7 @@ body{font-family:var(--ffb);background:var(--bg);color:var(--fg);display:flex;fl
 /* خط أفقي متقطع يربط الشخص بزوجه */
 .spouse-line{position:absolute;pointer-events:none}
 .node-name{font-family:var(--ff);font-size:.8rem;font-weight:700;color:var(--sepia);text-align:center;background:var(--card);border:1px solid var(--border);border-radius:7px;padding:3px 9px;max-width:95px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;box-shadow:0 1px 4px rgba(0,0,0,.07)}
-.node.root .node-name{font-size:.92rem;max-width:115px}
+
 /* رحمه الله — خط صغير بعد الاسم */
 .rip{display:inline-block;font-family:'Scheherazade New','Noto Naskh Arabic',serif;font-weight:400;font-size:.5em;line-height:1.5;
   margin-inline-start:6px;vertical-align:.25em;border:1px solid currentColor;border-color:color-mix(in srgb,currentColor 45%,transparent);
@@ -755,6 +756,7 @@ function clearSpouses(){spouseEls.forEach(e=>e.remove());spouseEls=[]}
 /* يُظهر الزوجة/الزوجات جانب العقدة كعقد حقيقية قابلة للنقر */
 /* يطابق حجم دائرة الزوج/الزوجة مع صاحبها */
 function matchSize(ownerEl,spEl){
+  if(ownerEl.classList.contains('top'))spEl.classList.add('top');return;
   const big=!!ownerEl.querySelector('.avatar-ring.root,.avatar-ring.big');
   spEl.querySelector('.avatar-wrap').classList.toggle('big',big);
   spEl.querySelector('.avatar-ring').classList.toggle('big',big);
@@ -790,7 +792,7 @@ function showSpouseFor(id){
   });
   const nx=parseFloat(nodeEl.style.left);
   const ny=parseFloat(nodeEl.style.top);
-  const OFFSET=105;
+  const OFFSET=128;
   /* الذكر: الزوجة يمينه — الأنثى: الزوج يسارها */
   const DIR=m.sex==='f'?-1:1;
 
@@ -858,13 +860,13 @@ function showSpouseView(spId,clickedId){
   history.push('sp:'+spId);hideAll();
   const {w,h}=getSize();
   const DIR=owner.sex==='f'?-1:1;
-  const ox=w/2-DIR*52, oy=h*0.17;
+  const ox=w/2-DIR*64, oy=h*0.17;
   /* صاحب الشجرة */
   createNode(ownerId);
   nodeEls[ownerId].style.left=ox+'px';nodeEls[ownerId].style.top=oy+'px';
   /* الزوج/الزوجة المختارة جنبه */
   createNode(spId);
-  const sx=ox+DIR*105;
+  const sx=ox+DIR*128;
   nodeEls[spId].style.left=sx+'px';nodeEls[spId].style.top=oy+'px';
   [ownerId,spId].forEach(i=>{nodeEls[i].classList.remove('hidden');nodeEls[i].classList.add('visible')});
   matchSize(nodeEls[ownerId],nodeEls[spId]);
@@ -875,6 +877,7 @@ function showSpouseView(spId,clickedId){
     kids.forEach(k=>createNode(k));placeNodes(kids,husbandId);
     setTimeout(()=>drawKidLines(husbandId,kids,()=>false),150);
   }
+  setTop([ownerId,spId]);
   markFocus(clickedId||(owner.sex==='f'?ownerId:spId),ownerId);
   backBtn.classList.remove('hidden');
 }
@@ -943,6 +946,12 @@ function showPersonBar(id){
   setNameWithRip(bar,id,t);bar.hidden=!t;
 }
 
+/* الكبير: الشخص المفتوح فوق ومعه زوجه/زوجته — الباقي بالمقاس العادي */
+function setTop(ids){
+  document.querySelectorAll('.node.top').forEach(n=>n.classList.remove('top'));
+  [].concat(ids).forEach(i=>{if(i&&nodeEls[i])nodeEls[i].classList.add('top');});
+}
+
 /* ينقل زر ⓘ للشخص اللي ضغطت عليه — بدون ما يفتح المعلومات */
 function setInfoOn(id){
   document.querySelectorAll('.node.focus').forEach(n=>n.classList.remove('focus'));
@@ -966,7 +975,7 @@ function hideAll(){
   clearSpouses();
 }
 
-function showRoot(){hideAll();history=[];createNode('zamil');placeNodes(['zamil'],null);markFocus('zamil');backBtn.classList.add('hidden');closeInfo()}
+function showRoot(){hideAll();history=[];createNode('zamil');placeNodes(['zamil'],null);setTop('zamil');markFocus('zamil');backBtn.classList.add('hidden');closeInfo()}
 
 function onNodeClick(id){
   /* الضغط على الكارد: يفتح الأبناء أو يعرض الشخص مع زوجاته */
@@ -998,6 +1007,7 @@ function onNodeClick(id){
     nodeEls[id].style.left=w/2+'px';nodeEls[id].style.top=h*0.5+'px';
     nodeEls[id].classList.remove('hidden');nodeEls[id].classList.add('visible');
     setTimeout(()=>showSpouseFor(id),200);
+    setTop(id);
     markFocus(id);
     backBtn.classList.remove('hidden');
   }
@@ -1020,6 +1030,7 @@ function expandNode(id){
     drawKidLines(id,kids,kid=>multi||FAM[kid]?.role==='wife');
     if(!multi) showSpouseFor(id);
   },150);
+  setTop(id);
   markFocus(id);
   backBtn.classList.remove('hidden');
 }
