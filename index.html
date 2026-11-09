@@ -1994,7 +1994,7 @@ function showToast(msg){const t=document.getElementById('toast');t.textContent=m
     hdr.style.transition='none';apply();
     if(nt!==t)el.scrollTop=nt;     /* نعوّض الحركة عشان المحتوى يمشي مع إصبعك بالضبط */
     /* وصلت أول الصفحة: الهيدر يرجع كامل */
-    if(el.scrollTop<=0&&offset>0){offset=0;hdr.style.transition='margin-top .2s ease';apply();}
+    if(d<0&&el.scrollTop<=0&&offset>0){offset=0;hdr.style.transition='margin-top .2s ease';apply();}
     prev.set(el,el.scrollTop);
   },true);
 })();
