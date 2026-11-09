@@ -959,9 +959,8 @@ function applyNameLock(id,radaOverride){
   const locked=nameLocked(id,radaOverride);
   fn.readOnly=locked;fn.style.opacity=locked?'.8':'';fn.title=locked?'تلقائي من الأب':'';
   if(locked){const sh=document.getElementById('edit-short').value.trim();const t=nameTail(id);fn.value=(sh+' '+t).trim();}
-  /* لمن؟: مفتوح للرضاعة فقط */
-  const rada=radaOverride===undefined?!!FAM[id]?.rada:radaOverride;
-  const relLocked=!(rada&&FAM[id]?.role!=='wife');
+  /* لمن؟: مقفول دايماً — للرضاعة يكون زوج اللي رضّعت */
+  const relLocked=true;
   ro.readOnly=relLocked;ro.style.opacity=relLocked?'.8':'';ro.tabIndex=relLocked?-1:0;ro.style.cursor=relLocked?'default':'';
 }
 function syncFullName(){
@@ -1357,7 +1356,7 @@ function openInfoPanel(id){
     reltypeEl.value=saved;
   }
   const relofEl=document.getElementById('edit-relof');
-  if(relofEl){relofEl.value=(m.rada&&m.relOf)?m.relOf:relOfAuto(id);}
+  if(relofEl){relofEl.value=relOfAuto(id);}
   applyNameLock(id);
   updateZoomBadge();
   if(false){
@@ -1682,7 +1681,7 @@ function onRelTypeChange(){
   const relOfEl=document.getElementById('edit-relof');
   if(relOfEl&&editingId){
     /* نجرب النوع الجديد مؤقتاً عشان "لمن؟" يتحدث */
-    const m=FAM[editingId],old=m.rada;m.rada=isRada;relOfEl.value=(isRada&&m.relOf)?m.relOf:relOfAuto(editingId);m.rada=old;
+    const m=FAM[editingId],old=m.rada;m.rada=isRada;relOfEl.value=relOfAuto(editingId);m.rada=old;
     applyNameLock(editingId,isRada);
   }
 }
@@ -2009,7 +2008,7 @@ function saveEdit(){
   if(reltypeVal) FAM[editingId].relType=reltypeVal;
   const relofVal=(document.getElementById('edit-relof')?.value||'').trim();
   /* "لمن؟": تلقائي — إلا الرضاعة تنكتب باليد */
-  if(editingRada&&relofVal&&FAM[editingId].role!=='wife') FAM[editingId].relOf=relofVal; else delete FAM[editingId].relOf;
+  delete FAM[editingId].relOf; /* "لمن؟" تلقائي ومقفول للكل */
 
   /* تطبيق الزوج/ة المحدد */
   let addedSpouseId=null;
