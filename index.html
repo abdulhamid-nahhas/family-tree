@@ -134,7 +134,7 @@ body{font-family:var(--ffb);background:var(--bg);color:var(--fg);display:flex;fl
 .node-back-hint svg{width:12px;height:12px;fill:none;stroke:var(--sepia);stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
 /* back-btn removed — back arrow is on the node itself */
 /* ── نافذة ⓘ المنبثقة (تعرض + تعديل) ── */
-.info-popup{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--card);border:1.5px solid var(--gold);border-radius:16px;padding:0;min-width:300px;max-width:520px;width:96vw;height:min(90vh,640px);display:flex;flex-direction:column;box-shadow:0 8px 28px rgba(0,0,0,.22);font-family:var(--ffb);z-index:200;transition:opacity .2s;overflow:hidden;direction:rtl}
+.info-popup{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--card);border:1.5px solid var(--gold);border-radius:16px;padding:0;min-width:300px;max-width:520px;width:96vw;height:auto;max-height:min(92vh,680px);display:flex;flex-direction:column;box-shadow:0 8px 28px rgba(0,0,0,.22);font-family:var(--ffb);z-index:200;transition:opacity .2s;overflow:hidden;direction:rtl}
 .info-popup.hidden{opacity:0;pointer-events:none}
 .info-av-row{display:flex;align-items:center;gap:10px;padding:10px 14px 8px;border-bottom:1px solid var(--border);flex-shrink:0}
 .info-av-wrap{position:relative;flex-shrink:0}
@@ -152,7 +152,7 @@ body{font-family:var(--ffb);background:var(--bg);color:var(--fg);display:flex;fl
 /* زر الإغلاق داخل النافذة */
 .info-close-x{width:28px;height:28px;border-radius:50%;background:color-mix(in srgb,var(--sepia) 12%,transparent);border:none;font-size:.85rem;color:var(--sepia);opacity:.7;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:var(--ffb);line-height:1;flex-shrink:0}
 /* حقول التعديل داخل النافذة */
-.info-fields{padding:10px 14px;overflow-y:auto;flex:1;min-height:0}
+.info-fields{padding:10px 14px;overflow-y:auto;flex:0 1 auto;min-height:0}
 .sex-btn{flex:1;padding:6px 0;border-radius:8px;border:2px solid transparent;font-size:.78rem;font-family:var(--ffb);font-weight:700;cursor:pointer;transition:all .15s;opacity:.6;background:color-mix(in srgb,var(--sepia) 8%,transparent);color:var(--sepia)}
 .sex-btn-m.selected{background:color-mix(in srgb,var(--blue) 25%,transparent);border-color:var(--blue);color:var(--blue);opacity:1}
 .sex-btn-f.selected{background:color-mix(in srgb,var(--rose) 25%,transparent);border-color:var(--rose);color:var(--rose);opacity:1}
