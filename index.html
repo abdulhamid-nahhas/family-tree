@@ -110,7 +110,9 @@ body.hdr-hidden .hdr{margin-top:calc(-1 * var(--hdrH,0px))}
 .node-name{font-family:var(--ff);font-size:.8rem;font-weight:700;color:var(--sepia);text-align:center;background:var(--card);border:1px solid var(--border);border-radius:7px;padding:3px 9px;max-width:95px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;box-shadow:0 1px 4px rgba(0,0,0,.07)}
 .node.root .node-name{font-size:.92rem;max-width:115px}
 /* رحمه الله — خط صغير بعد الاسم */
-.rip{font-size:.55em;font-weight:600;opacity:.85;margin-inline-start:3px;vertical-align:.35em;white-space:nowrap}
+.rip{display:inline-block;font-family:'Scheherazade New','Noto Naskh Arabic',serif;font-weight:400;font-size:.5em;line-height:1.5;
+  margin-inline-start:6px;vertical-align:.25em;border:1px solid currentColor;border-color:color-mix(in srgb,currentColor 45%,transparent);
+  border-radius:5px;padding:0 5px;opacity:.9;white-space:nowrap}
 .node-name.has-rip{max-width:130px}
 .node:hover .avatar-ring{box-shadow:0 0 0 3px color-mix(in srgb,var(--gold) 40%,transparent)}
 /* رقم ترتيب الولادة */
@@ -910,7 +912,11 @@ function ripText(id){return FAM[id]?.sex==='f'?'رحمها الله':'رحمه �
 function setNameWithRip(el,id,text){
   if(!el)return;
   el.textContent=text;
-  if(isDeceased(id)){const r=document.createElement('span');r.className='rip';r.textContent=ripText(id);el.appendChild(r);el.classList.add('has-rip');}
+  if(isDeceased(id)){
+    /* \u200C يمنع الحرف الأخير من الاسم يتصل بـ"رحمه" */
+    el.appendChild(document.createTextNode('\u200C'));
+    const r=document.createElement('span');r.className='rip';r.textContent=ripText(id);el.appendChild(r);el.classList.add('has-rip');
+  }
   else el.classList.remove('has-rip');
 }
 function showPersonBar(id){
@@ -1402,7 +1408,7 @@ function buildProfiles(){
     const avcls='pc-avatar'+(m.sex==='f'?' female':'')+(m.rada?' rada':'')+(m.role==='root'?' root':'');
     const radaCls=m.rada?(m.sex==='f'?' rada rada-f':' rada rada-m'):'';
     card.innerHTML=`<div class="${avcls}${radaCls}">${avatarHTML(id)}</div>
-      <div class="pc-name">${m.name}${isDeceased(id)?`<span class="rip">${ripText(id)}</span>`:''}</div>
+      <div class="pc-name">${m.name}${isDeceased(id)?`&zwnj;<span class="rip">${ripText(id)}</span>`:''}</div>
       <div class="pc-role">${m.role==='root'?'الجد الأكبر':m.role==='wife'?'زوجة':(m.rada?(m.sex==='f'?'رضاعة أنثى':'رضاعة ذكر'):getNasab(id))}</div>
       <div class="pc-branch">${getBranch(id)}</div>`;
     card.addEventListener('click',()=>{switchTab('drill');setTimeout(()=>{showRoot();openInfoPanel(id)},120)});
