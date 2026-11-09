@@ -304,7 +304,7 @@ textarea.form-input{resize:vertical;min-height:52px}
     <div style="display:flex;gap:8px">
       <div class="info-field-row" style="flex:1">
         <label class="info-field-label">الاسم الأول</label>
-        <input id="edit-short" class="info-field-input" type="text" placeholder="فلان">
+        <input id="edit-short" class="info-field-input" type="text" placeholder="فلان" oninput="syncFullName()">
       </div>
       <div id="row-fullname" class="info-field-row" style="flex:2">
         <label class="info-field-label">الاسم الكامل</label>
@@ -895,7 +895,7 @@ function fatherOf(id){
   if(p.sex==='f'){const h=wivesOf(m.par);return h.length?h[0]:null;}
   return m.par;
 }
-function fullName(id){
+function nasabFullName(id){
   const m=FAM[id];if(!m)return '';
   const first=x=>(FAM[x].short||shortName(FAM[x].name,x)||'').trim();
   if(m.role==='root')return /نحاس/.test(m.name||'')?m.name:first(id)+' نحاس';
@@ -924,9 +924,22 @@ function setNameWithRip(el,id,text){
   }
   else el.classList.remove('has-rip');
 }
+/* الاسم الأول يتغير → الاسم الكامل يتحدث تلقائياً (لو ما عدّلته يدوياً) */
+let lastAutoFirst='';
+function nameTail(id){const f=nasabFullName(id);const first=(FAM[id]?.short||shortName(FAM[id]?.name,id)||'');return f.startsWith(first)?f.slice(first.length).trim():'';}
+function syncFullName(){
+  if(!editingId||!FAM[editingId]||FAM[editingId].role==='wife'||FAM[editingId].rada)return;
+  const tail=nameTail(editingId);if(!tail)return;
+  const fn=document.getElementById('edit-name'), sh=document.getElementById('edit-short');
+  const expectedOld=(lastAutoFirst+' '+tail).trim();
+  if(!fn.value.trim()||fn.value.trim()===expectedOld||fn.value.trim()===lastAutoFirst){
+    fn.value=(sh.value.trim()+' '+tail).trim();
+  }
+  lastAutoFirst=sh.value.trim();
+}
 function showPersonBar(id){
   const bar=document.getElementById('person-bar');if(!bar)return;
-  const t=id&&FAM[id]?fullName(id):'';
+  const t=id&&FAM[id]?nasabFullName(id):'';
   setNameWithRip(bar,id,t);bar.hidden=!t;
 }
 
@@ -1178,6 +1191,7 @@ function openInfoPanel(id){
   if(nameEl) setNameWithRip(nameEl,id,m.short||shortName(m.name,null)||m.name);
   /* حقول التعديل */
   document.getElementById('edit-short').value=m.short||shortName(m.name,null)||'';
+  lastAutoFirst=document.getElementById('edit-short').value.trim();
   document.getElementById('edit-name').value=m.name||'';
   /* النسب التلقائي قابل للتعديل */
   const nasabEl=document.getElementById('edit-nasab');
@@ -1812,10 +1826,13 @@ function saveEdit(){
       /* زوجات زامل القديمات أبناؤهن مسجلين عندهن — نخليها كذا */
       if(own&&!(FAM[own].children||[]).includes(editingId)){holder=own;mother=editingId;}
     }
-    FAM[chId]={name:(selectedChildSex==='f'?'طفلة':'طفل'),sex:selectedChildSex,par:holder,children:[],photo:null};
+    const first=selectedChildSex==='f'?'طفلة':'طفل';
+    FAM[chId]={name:first,short:first,sex:selectedChildSex,relType:selectedChildSex==='f'?'daughter':'son',par:holder,children:[],photo:null};
     if(mother)FAM[chId].mother=mother;
     if(!FAM[holder].children) FAM[holder].children=[];
     FAM[holder].children.push(chId);
+    /* الاسم الكامل تلقائي: طفل عبدالحميد زامل نحاس */
+    FAM[chId].name=nasabFullName(chId)||first;
   }
 
   saveData();
