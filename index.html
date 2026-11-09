@@ -93,6 +93,11 @@ body{font-family:var(--ffb);background:var(--bg);color:var(--fg);display:flex;fl
 .node.top .avatar-wrap,.node.top .avatar-ring{width:86px;height:86px}
 .node.top .avatar-ring{border-width:4px}
 .node.top .node-name{font-size:.9rem;max-width:130px}
+/* نقطة برتقالية: بيانات ناقصة */
+.incomplete-dot{position:absolute;bottom:1px;left:1px;width:17px;height:17px;border-radius:50%;background:#E8892B;border:2.5px solid var(--bg);
+  color:#fff;font:700 10px/1 var(--ffb);display:flex;align-items:center;justify-content:center;z-index:3;pointer-events:none}
+.node.top .incomplete-dot{width:20px;height:20px;font-size:12px}
+.info-missing{margin-top:4px;background:color-mix(in srgb,#E8892B 14%,transparent);border:1px solid #E8892B;color:#E8892B;border-radius:7px;padding:3px 8px;font-size:.68rem;font-weight:700;display:inline-block}
 .avatar-ring img{width:100%;height:100%;object-fit:cover;border-radius:50%}
 .default-avatar{width:70%;height:70%;opacity:.6}
 /* 💍 بادج الزوجة — SVG لضمان ظهوره على كل المتصفحات */
@@ -296,6 +301,7 @@ textarea.form-input{resize:vertical;min-height:52px}
     <div class="info-meta">
       <div class="info-name" id="info-name"></div>
       <div id="info-age-badge" style="font-size:.65rem;color:var(--gold);font-weight:700;margin-top:2px"></div>
+      <div id="info-missing" class="info-missing" hidden></div>
     </div>
   </div>
   <input type="file" id="avatar-file-input" accept="image/*" onchange="handleAvatarUpload(event)">
@@ -636,6 +642,7 @@ function createNode(id){
   const ring=document.createElement('div');
   ring.className='avatar-ring'+(m.sex==='f'?' female':'')+(m.rada?' rada':'')+(isRoot?' root':'');
   ring.innerHTML=avatarHTML(id);
+  setTimeout(()=>updateIncomplete(id),0);
   /* زوجات زامل: الدائرة الوردية كافية للتمييز — لا بادج إضافي */
   /* زر ⓘ على اليمين */
   const infoBtn=document.createElement('button');
@@ -946,6 +953,25 @@ function showPersonBar(id){
   setNameWithRip(bar,id,t);bar.hidden=!t;
 }
 
+/* البيانات الأساسية: تاريخ الميلاد + الاسم الكامل (الصورة اختيارية) */
+function missingFields(id){
+  const m=FAM[id];if(!m)return[];
+  const miss=[];
+  if(!(m.birth&&String(m.birth).trim()))miss.push('تاريخ الميلاد');
+  if(!m.name||m.name.trim().split(/\s+/).length<2)miss.push('الاسم الكامل');
+  return miss;
+}
+function updateIncomplete(id){
+  const el=nodeEls[id];if(!el)return;
+  const wrap=el.querySelector('.avatar-wrap');if(!wrap)return;
+  let dot=wrap.querySelector('.incomplete-dot');
+  const miss=missingFields(id);
+  if(miss.length){
+    if(!dot){dot=document.createElement('span');dot.className='incomplete-dot';dot.textContent='!';wrap.appendChild(dot);}
+    dot.title='ناقص: '+miss.join('، ');
+  }else if(dot)dot.remove();
+}
+
 /* الكبير: الشخص المفتوح فوق ومعه زوجه/زوجته — الباقي بالمقاس العادي */
 function setTop(ids){
   document.querySelectorAll('.node.top').forEach(n=>n.classList.remove('top'));
@@ -1201,6 +1227,8 @@ function openInfoPanel(id){
   /* اسم في رأس النافذة */
   const nameEl=document.getElementById('info-name');
   if(nameEl) setNameWithRip(nameEl,id,m.short||shortName(m.name,null)||m.name);
+  {const mi=document.getElementById('info-missing');const miss=missingFields(id);
+   if(mi){mi.textContent=miss.length?'⚠ ناقص: '+miss.join('، '):'';mi.hidden=!miss.length;}}
   /* حقول التعديل */
   document.getElementById('edit-short').value=m.short||shortName(m.name,null)||'';
   lastAutoFirst=document.getElementById('edit-short').value.trim();
@@ -1906,6 +1934,7 @@ function saveEdit(){
 
   /* إعادة رسم فورية */
   closeInfo();
+  updateIncomplete(editingId);
   const curId=history[history.length-1];
   const edm=FAM[editingId];
   if(addedSpouseId&&edm.sex==='f'&&edm.role!=='wife'&&wivesOf(editingId).length===1){
@@ -2010,6 +2039,7 @@ function confirmAddChild(){
 function refreshUI(id){
   const m=FAM[id];
   if(!m)return;
+  updateIncomplete(id);
   if(nodeEls[id]){
     const ring=nodeEls[id].querySelector('.avatar-ring');
     if(ring){
