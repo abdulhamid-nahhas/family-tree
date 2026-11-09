@@ -467,6 +467,7 @@ const SB_URL='https://thzczmcuybqrvcxgfzny.supabase.co';
 const SB_KEY='sb_publishable_HCoYRY02NYDPochgwM9QwA_h8Oe3rs4';
 let sb=null;try{sb=window.supabase.createClient(SB_URL,SB_KEY)}catch(e){console.error('supabase init',e)}
 let cloudIds=new Set();     /* الأعضاء الموجودين في السحابة */
+let cloudJSON={};           /* آخر نسخة نعرفها من السحابة لكل عضو — نرفع اللي تغيّر بس */
 let lastOwnSave=0;          /* لتجاهل إشعار التحديث الناتج عن حفظنا نحن */
 
 function saveData(){
@@ -476,11 +477,15 @@ function saveData(){
 async function pushToCloud(){
   if(!sb)return;
   lastOwnSave=Date.now();
-  const rows=Object.keys(FAM).map(id=>({id,data:FAM[id]}));
-  const {error}=await sb.from('members').upsert(rows,{onConflict:'id'});
-  if(error){console.error('cloud save',error);showToast('⚠ ما انحفظ في السحابة — تأكد من الإنترنت');return;}
+  /* نرفع الأعضاء اللي تغيّروا فقط — عشان جهاز فاتح بيانات قديمة ما يمسح تعديلات غيره */
+  const rows=Object.keys(FAM).filter(id=>JSON.stringify(FAM[id])!==cloudJSON[id]).map(id=>({id,data:FAM[id]}));
+  if(rows.length){
+    const {error}=await sb.from('members').upsert(rows,{onConflict:'id'});
+    if(error){console.error('cloud save',error);showToast('⚠ ما انحفظ في السحابة — تأكد من الإنترنت');return;}
+    rows.forEach(r=>cloudJSON[r.id]=JSON.stringify(r.data));
+  }
   const gone=[...cloudIds].filter(id=>!FAM[id]);
-  if(gone.length){const r=await sb.from('members').delete().in('id',gone);if(r.error)console.error('cloud delete',r.error);}
+  if(gone.length){const r=await sb.from('members').delete().in('id',gone);if(r.error)console.error('cloud delete',r.error);else gone.forEach(id=>delete cloudJSON[id]);}
   cloudIds=new Set(Object.keys(FAM));
   lastOwnSave=Date.now();
 }
@@ -504,6 +509,7 @@ async function pullFromCloud(){
   }
   const next={};data.forEach(r=>next[r.id]=r.data);
   FAM=next;cloudIds=new Set(Object.keys(FAM));
+  cloudJSON={};data.forEach(r=>cloudJSON[r.id]=JSON.stringify(r.data));
   try{localStorage.setItem('fam_data',JSON.stringify(FAM))}catch(e){}
   rerenderCurrent();
 }
