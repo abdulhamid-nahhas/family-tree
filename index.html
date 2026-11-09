@@ -139,6 +139,10 @@ body{font-family:var(--ffb);background:var(--bg);color:var(--fg);display:flex;fl
 .info-popup.hidden{opacity:0;pointer-events:none}
 .info-av-row{display:flex;align-items:center;gap:10px;padding:10px 14px 8px;border-bottom:1px solid var(--border);flex-shrink:0}
 .info-av-wrap{position:relative;flex-shrink:0}
+/* شريط "تكبير" تحت الصورة — يطلع بس إذا فيه صورة حقيقية */
+.info-zoom{position:absolute;bottom:-9px;left:50%;transform:translateX(-50%);white-space:nowrap;background:rgba(20,14,8,.9);color:#F0D49A;
+  border:1px solid var(--gold);border-radius:20px;padding:1px 8px;font:700 .62rem var(--ffb);display:flex;gap:3px;align-items:center;cursor:zoom-in;z-index:2}
+.info-zoom svg{width:11px;height:11px}
 .info-av{width:50px;height:50px;border-radius:50%;border:2px solid var(--blue);overflow:hidden;background:var(--sand-mid);cursor:pointer}
 .info-av.female{border-color:var(--rose)}
 .info-av.rada-m{border-style:dashed;border-color:var(--blue)}
@@ -298,6 +302,7 @@ textarea.form-input{resize:vertical;min-height:52px}
     <div class="info-av-wrap">
       <div class="info-av" id="info-av" onclick="openPhotoViewer()" style="cursor:zoom-in"></div>
       <div class="info-av-edit" onclick="triggerAvatarUpload()" title="تغيير الصورة">✏️</div>
+      <button type="button" class="info-zoom" id="info-zoom" onclick="openPhotoViewer()" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l5 5"/></svg>تكبير</button>
     </div>
     <div class="info-meta">
       <div class="info-name" id="info-name"></div>
@@ -941,15 +946,29 @@ function setNameWithRip(el,id,text){
 /* الاسم الأول يتغير → الاسم الكامل يتحدث تلقائياً (لو ما عدّلته يدوياً) */
 let lastAutoFirst='';
 function nameTail(id){const f=nasabFullName(id);const first=(FAM[id]?.short||shortName(FAM[id]?.name,id)||'');return f.startsWith(first)?f.slice(first.length).trim():'';}
+/* قاعدة: الابن/الابنة → الاسم الكامل تلقائي من الأب ومقفول
+   الرضاعة والزوجات والجد → الاسم الكامل مفتوح للكتابة */
+function nameLocked(id,radaOverride){
+  const m=FAM[id];if(!m)return false;
+  const rada=radaOverride===undefined?!!m.rada:radaOverride;
+  return m.role!=='wife'&&m.role!=='root'&&!rada;
+}
+function effectiveFullName(id){return nameLocked(id)?(nasabFullName(id)||FAM[id].name||''):(FAM[id]?.name||'');}
+function applyNameLock(id,radaOverride){
+  const fn=document.getElementById('edit-name'),ro=document.getElementById('edit-relof');
+  const locked=nameLocked(id,radaOverride);
+  fn.readOnly=locked;fn.style.opacity=locked?'.8':'';fn.title=locked?'تلقائي من الأب':'';
+  if(locked){const sh=document.getElementById('edit-short').value.trim();const t=nameTail(id);fn.value=(sh+' '+t).trim();}
+  /* لمن؟: مفتوح للرضاعة فقط */
+  const rada=radaOverride===undefined?!!FAM[id]?.rada:radaOverride;
+  const relLocked=!(rada&&FAM[id]?.role!=='wife');
+  ro.readOnly=relLocked;ro.style.opacity=relLocked?'.8':'';ro.tabIndex=relLocked?-1:0;ro.style.cursor=relLocked?'default':'';
+}
 function syncFullName(){
-  if(!editingId||!FAM[editingId]||FAM[editingId].role==='wife'||FAM[editingId].rada)return;
-  const tail=nameTail(editingId);if(!tail)return;
-  const fn=document.getElementById('edit-name'), sh=document.getElementById('edit-short');
-  const expectedOld=(lastAutoFirst+' '+tail).trim();
-  if(!fn.value.trim()||fn.value.trim()===expectedOld||fn.value.trim()===lastAutoFirst){
-    fn.value=(sh.value.trim()+' '+tail).trim();
-  }
-  lastAutoFirst=sh.value.trim();
+  if(!editingId||!FAM[editingId])return;
+  const fn=document.getElementById('edit-name');
+  if(fn.readOnly){applyNameLock(editingId,editingRada);}
+  lastAutoFirst=document.getElementById('edit-short').value.trim();
 }
 /* "لمن؟" تلقائي:
    - ابن/ابنة → اسم الأم الكامل (اسم الأب موجود في الاسم الكامل)
@@ -987,7 +1006,8 @@ function missingFields(id){
   const m=FAM[id];if(!m)return[];
   const miss=[];
   if(!(m.birth&&String(m.birth).trim()))miss.push('تاريخ الميلاد');
-  if(!m.name||m.name.trim().split(/\s+/).length<2)miss.push('الاسم الكامل');
+  const fnm=effectiveFullName(id);
+  if(!fnm||fnm.trim().split(/\s+/).length<2)miss.push('الاسم الكامل');
   return miss;
 }
 function updateIncomplete(id){
@@ -1337,7 +1357,9 @@ function openInfoPanel(id){
     reltypeEl.value=saved;
   }
   const relofEl=document.getElementById('edit-relof');
-  if(relofEl){relofEl.value=relOfAuto(id);}
+  if(relofEl){relofEl.value=(m.rada&&m.relOf)?m.relOf:relOfAuto(id);}
+  applyNameLock(id);
+  updateZoomBadge();
   if(false){
     if(m.relOf){
       relofEl.value=m.relOf;
@@ -1383,6 +1405,11 @@ function closeInfo(){
   cancelDelete();
 }
 
+function updateZoomBadge(){
+  const z=document.getElementById('info-zoom');if(!z)return;
+  const src=pendingPhoto||(editingId&&FAM[editingId]?.photo);
+  z.hidden=!(src&&/^(data:image|https?:)/.test(src));
+}
 /* ══ عرض الصورة كاملة: من نافذة المعلومات، تكبير بإصبعين، ✕ أو ضغطة برّا للإغلاق ══ */
 function openPhotoViewer(){
   const src=pendingPhoto||(editingId&&FAM[editingId]?.photo);
@@ -1655,7 +1682,8 @@ function onRelTypeChange(){
   const relOfEl=document.getElementById('edit-relof');
   if(relOfEl&&editingId){
     /* نجرب النوع الجديد مؤقتاً عشان "لمن؟" يتحدث */
-    const m=FAM[editingId],old=m.rada;m.rada=isRada;relOfEl.value=relOfAuto(editingId);m.rada=old;
+    const m=FAM[editingId],old=m.rada;m.rada=isRada;relOfEl.value=(isRada&&m.relOf)?m.relOf:relOfAuto(editingId);m.rada=old;
+    applyNameLock(editingId,isRada);
   }
 }
 function updateRadaUI(){
@@ -1891,6 +1919,7 @@ function applyCrop(cv,modal){
   const avEl=document.getElementById('info-av');
   if(avEl){
     avEl.innerHTML=`<img src="${dataUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
+    updateZoomBadge();
   }
   if(modal) modal.remove();
 }
@@ -1967,6 +1996,7 @@ function saveEdit(){
   FAM[editingId].short=shortVal;
   if(orderVal) FAM[editingId].order=orderVal; else delete FAM[editingId].order;
   FAM[editingId].name=fullName||shortVal;
+  if(nameLocked(editingId,editingRada)) FAM[editingId].name=nasabFullName(editingId)||shortVal; /* تلقائي من الأب */
   if(nasabVal) FAM[editingId].nasab=nasabVal; else delete FAM[editingId].nasab;
   FAM[editingId].bio=bio;
   if(birth) FAM[editingId].birth=birth; else delete FAM[editingId].birth;
@@ -1978,7 +2008,8 @@ function saveEdit(){
   const reltypeVal=document.getElementById('edit-reltype')?.value;
   if(reltypeVal) FAM[editingId].relType=reltypeVal;
   const relofVal=(document.getElementById('edit-relof')?.value||'').trim();
-  delete FAM[editingId].relOf; /* "لمن؟" صار تلقائي */
+  /* "لمن؟": تلقائي — إلا الرضاعة تنكتب باليد */
+  if(editingRada&&relofVal&&FAM[editingId].role!=='wife') FAM[editingId].relOf=relofVal; else delete FAM[editingId].relOf;
 
   /* تطبيق الزوج/ة المحدد */
   let addedSpouseId=null;
