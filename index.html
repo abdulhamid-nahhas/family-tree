@@ -1917,7 +1917,7 @@ function buildFullTree(){
     const ks=kidsOf(id).filter(k=>P[k]);if(!ks.length)return;
     const dashed=FAM[id].role==='root';
     lines.push({t:'trunk',id,ks,el:mkPath(dashed)});
-    ks.forEach(k=>lines.push({t:'drop',id,k,el:mkPath(dashed||!!FAM[k].rada)}));
+    ks.forEach(k=>lines.push({t:'drop',id,k,el:mkPath(dashed)}));  /* المنقط للزوجات بس — الرضاعة خط متصل */
   });
   const nodes=Object.keys(P).map(id=>{
     const m=FAM[id];
