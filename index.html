@@ -1916,13 +1916,15 @@ function profileChips(){
   const zAll=new Set();{const walk=k=>directKids(k).forEach(g=>{if(!zAll.has(g)){zAll.add(g);walk(g);}});walk(root);}
   const chips=[
     {key:'zk',g:'lin',label:'زامل',test:id=>zKids.has(id)},
-    {key:'zg',g:'lin',label:'أحفاد زامل',test:id=>zAll.has(id)&&!zDirect.has(id)&&notSpouse(id)},
+    {key:'zg',g:'lin',label:'أحفاد زامل',test:id=>zAll.has(id)&&!zDirect.has(id)&&notSpouse(id)&&!FAM[id].rada},
   ];
   wivesOf(root).forEach(w=>{
     const kids=new Set(kidsOfCouple(root,w));
     chips.push({key:'w:'+w,g:'lin',label:firstOf(w),test:id=>kids.has(id)&&!FAM[id].rada});
   });
-  chips.push({key:'rada',g:'lin',label:'الرضاعة',test:id=>!!FAM[id].rada&&notSpouse(id)});
+  /* الرضاعة: أبناء زامل بالرضاعة — أحفاد الرضاعة: أبناء أبناء زامل بالرضاعة */
+  chips.push({key:'rada',g:'lin',label:'الرضاعة',test:id=>!!FAM[id].rada&&notSpouse(id)&&zDirect.has(id)});
+  chips.push({key:'rada2',g:'lin',label:'أحفاد الرضاعة',test:id=>!!FAM[id].rada&&notSpouse(id)&&!zDirect.has(id)});
   chips.push({key:'m',g:'sex',label:'الأولاد',test:id=>notSpouse(id)&&FAM[id].sex!=='f'});
   chips.push({key:'f',g:'sex',label:'البنات',test:id=>notSpouse(id)&&FAM[id].sex==='f'});
   chips.push({key:'alive',g:'life',label:'الأحياء',test:id=>!isDeceased(id)});
@@ -1938,6 +1940,7 @@ function buildProfiles(){
   const box=document.getElementById('pf-chips');const sx=box.scrollLeft;
   let html=`<button type="button" class="pf-chip${PF.sel.size?'':' on'}" data-k="all">الكل <b>${ids.length}</b></button>`,lastG='';
   chips.forEach(c=>{
+    if(c.key==='rada2'&&!ids.some(c.test)&&!PF.sel.has(c.key))return; /* يطلع أول ما ينضاف أحد */
     if(c.g!==lastG){html+='<span class="pf-sep"></span>';lastG=c.g;}
     html+=`<button type="button" class="pf-chip${PF.sel.has(c.key)?' on':''}" data-k="${c.key}">${c.label} <b>${ids.filter(c.test).length}</b></button>`;
   });
