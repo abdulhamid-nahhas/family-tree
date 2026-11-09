@@ -854,7 +854,7 @@ function showSpouseView(spId,clickedId){
     kids.forEach(k=>createNode(k));placeNodes(kids,husbandId);
     setTimeout(()=>drawKidLines(husbandId,kids,()=>false),150);
   }
-  markFocus(clickedId||(owner.sex==='f'?ownerId:spId),ownerId);
+  markFocus([ownerId,spId],ownerId);
   backBtn.classList.remove('hidden');
 }
 
@@ -862,7 +862,7 @@ function showSpouseView(spId,clickedId){
 /* ⓘ على الشخص اللي ضغطت عليه فقط — والرجوع على الشخص اللي فوق */
 function markFocus(id,backId=id){
   document.querySelectorAll('.node.focus,.node.has-back').forEach(n=>n.classList.remove('focus','has-back'));
-  if(id&&nodeEls[id])nodeEls[id].classList.add('focus');
+  [].concat(id).forEach(x=>{if(x&&nodeEls[x])nodeEls[x].classList.add('focus');});
   if(history.length&&backId&&nodeEls[backId])nodeEls[backId].classList.add('has-back');
 }
 
@@ -882,15 +882,15 @@ function onNodeClick(id){
   const m=FAM[id];if(!m)return;
   /* الزوجات والأزواج (role=wife) لا يُفتح لهم view مستقل — نتجاهل الضغط */
   const curView=history[history.length-1];
-  /* الضغط على الزوج/الزوجة المعروض حالياً → نافذة معلوماته للتعديل والإضافة */
+  /* الضغط على الصورة ما يفتح المعلومات — المعلومات من زر ⓘ فقط */
   if(m.role==='wife'){
-    if(curView==='sp:'+id){openInfoPanel(id);return;}
+    if(curView==='sp:'+id)return;
     showSpouseView(id);return;
   }
   /* البنت المتزوجة: زوجها يسارها وأبناؤها يتفرعون من زوجها */
   if(m.sex==='f'){
     const hs=wivesOf(id);
-    if(hs.length===1&&curView==='sp:'+hs[0]){openInfoPanel(id);return;}
+    if(hs.length===1&&curView==='sp:'+hs[0])return;
     if(hs.length===1&&history[history.length-1]!=='sp:'+hs[0]){showSpouseView(hs[0],id);return;}
   }
   const kids=wivesOf(id).length>=2?wivesOf(id):sortedChildren(id);
