@@ -710,7 +710,9 @@ function ensureNums(){
   const root=Object.keys(FAM).find(k=>FAM[k].role==='root');
   const q=root?[root]:[];
   while(q.length){const id=q.shift();if(seen.has(id)||!FAM[id])continue;seen.add(id);order.push(id);
-    [...(FAM[id].spouseIds||[]),...(FAM[id].children||[])].forEach(k=>{if(!seen.has(k))q.push(k);});}
+    /* نفس ترتيب الشجرة: الزوجات حسب ترتيبهن، والأبناء حسب تاريخ الميلاد */
+    let nb;try{nb=[...wivesOf(id),...sortedChildren(id).filter(k=>FAM[k]&&FAM[k].role!=='wife'&&!FAM[k].link)];}catch(e){nb=[...(FAM[id].spouseIds||[]),...(FAM[id].children||[])];}
+    nb.forEach(k=>{if(!seen.has(k))q.push(k);});}
   Object.keys(FAM).sort().forEach(k=>{if(!seen.has(k))order.push(k);});
   let changed=false;
   order.forEach(id=>{const m=FAM[id];if(!m||m.link||m.num)return;m.num=++max;changed=true;});
