@@ -107,6 +107,13 @@ body{font-family:var(--ffb);background:var(--bg);color:var(--fg);display:flex;fl
 .node.focus .incomplete-dot{top:2px;right:12px}
 .info-missing{margin-top:4px;background:color-mix(in srgb,#E03131 14%,transparent);border:1px solid #E03131;color:#E86060;border-radius:7px;padding:3px 8px;font-size:.68rem;font-weight:700;display:inline-block}
 .avatar-ring img{width:100%;height:100%;object-fit:cover;border-radius:50%}
+.nav-av{position:relative;display:flex;align-items:center;justify-content:center;width:100%;height:100%;container-type:size;overflow:hidden}
+.nav-bg{position:absolute;inset:0;opacity:.38}
+.nav-bg svg{width:100%;height:100%;display:block}
+.nav-nm{position:relative;font-family:var(--ffb);font-weight:800;line-height:1.1;text-align:center;white-space:nowrap;max-width:94%;overflow:hidden;font-size:.8rem;font-size:calc(var(--k)*1cqw);
+  text-shadow:0 0 1px #fff,1px 1px 0 #fff,-1px -1px 0 #fff,1px -1px 0 #fff,-1px 1px 0 #fff,0 1.5px 0 #fff,0 -1.5px 0 #fff,1.5px 0 0 #fff,-1.5px 0 0 #fff,0 0 6px #fff,0 0 10px rgba(255,255,255,.9)}
+.nav-f .nav-nm{color:#8E4A3E}
+.nav-m .nav-nm{color:#2F5274}
 .default-avatar{width:70%;height:70%;opacity:.6}
 /* 💍 بادج الزوجة — SVG لضمان ظهوره على كل المتصفحات */
 .wife-badge{position:absolute;top:-5px;right:-5px;width:16px;height:16px;pointer-events:none;filter:drop-shadow(0 1px 2px rgba(0,0,0,.4))}
@@ -889,7 +896,13 @@ function avatarSVG(sex){
  <path d="M23.5 41 C26.5 46 29.5 47.6 32.5 47.6 C36.5 47.6 40 44.6 42 39.5" fill="none" stroke="#A9604F" stroke-width="1.6" stroke-linecap="round"/>
 </svg>`;
 }
-function avatarHTML(id){const m=FAM[id];if(m.photo)return`<img src="${m.photo}" alt="${m.name}">`;return avatarSVG(m.sex)}
+function avatarHTML(id){const m=FAM[id];if(m.photo)return`<img src="${m.photo}" alt="${m.name}">`;return nameAvatar(id);}
+/* بدون صورة: الأيقونة باهتة ورا، والاسم الأول واضح فوقها بحدود بيضاء (خيار ب) */
+function nameAvatar(id){
+  const m=FAM[id]||{};const n=(m.short||shortName(m.name,id)||'').trim();
+  const L=n.length, k=L<=3?27:L<=5?23:L<=7?19:16;
+  return `<span class="nav-av ${m.sex==='f'?'nav-f':'nav-m'}"><span class="nav-bg">${avatarSVG(m.sex)}</span><span class="nav-nm" style="--k:${k}">${escapeHtml(n)}</span></span>`;
+}
 
 /* ══ TABS ══ */
 let activeTab='drill';
