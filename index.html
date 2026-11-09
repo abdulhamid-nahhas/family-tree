@@ -877,6 +877,7 @@ function refreshShown(){
   if(activeTab==='full'&&typeof buildFullTree==='function')buildFullTree();
 }
 function createNode(id){
+  renderIds.add(id);
   if(nodeEls[id]&&nodeEls[id].isConnected){refreshNode(id);return nodeEls[id];}
   const m=FAM[id];
   const isRoot=m.role==='root';
@@ -1300,9 +1301,12 @@ const EASE_POP='cubic-bezier(.34,1.45,.64,1)', EASE_FLY='cubic-bezier(.2,.8,.2,1
 let flipFrom=null;   /* {id, x, cy, r} مكان الشخص قبل تغيير الشاشة */
 function rememberFlip(id){const el=nodeEls[id];flipFrom=(el&&el.isConnected&&el.classList.contains('visible'))?{id,...ringGeom(el)}:null;}
 /* يطيّر الشخص من مكانه القديم لمكانه الجديد ويكبر/يصغر معه */
+let renderIds=new Set(); /* الأشخاص اللي ينرسمون في الشاشة الحالية */
 function playFlip(){
   const f=flipFrom;flipFrom=null;
   if(!ANIM||!f)return false;
+  /* الشخص لازم يكون جزء من الشاشة الجديدة — وإلا لا نظهره (كان يعلق فوق زامل على الآيفون) */
+  if(!renderIds.has(f.id))return false;
   const el=nodeEls[f.id];if(!el)return false;
   const B=ringGeom(el);
   const dx=f.x-B.x,dy=f.cy-B.cy,sc=f.r/B.r;
@@ -1336,7 +1340,12 @@ function hideAll(){
   try{stage.scrollTo({top:0,left:0,behavior:'smooth'});}catch(e){stage.scrollTop=0;}
   try{window.scrollTo({top:0,behavior:'smooth'});}catch(e){}
   if(window.resetHeader)window.resetHeader();
-  Object.values(nodeEls).forEach(el=>{el.classList.remove('visible');el.classList.add('hidden')});
+  renderIds=new Set();
+  Object.values(nodeEls).forEach(el=>{
+    /* نوقف أي حركة شغالة عشان ما تعلق صورة على الشاشة (سفاري) */
+    try{el.getAnimations().forEach(a=>a.cancel());}catch(e){}
+    el.classList.remove('visible');el.classList.add('hidden');
+  });
   lineEls.forEach(l=>l.remove());lineEls=[];
   clearSpouses();
 }
