@@ -161,7 +161,15 @@ body{font-family:var(--ffb);background:var(--bg);color:var(--fg);display:flex;fl
 .name-note{font-size:.7rem;color:var(--sepia);opacity:.85;line-height:1.6}
 .name-btn{padding:10px;border:none;border-radius:10px;background:var(--gold);color:#fff;font:700 .95rem var(--ffb);cursor:pointer}
 .name-err{font-size:.75rem;color:#e57373}
-.me-chip{font:700 .62rem var(--ffb);color:var(--gold);opacity:.9;margin-top:2px}
+.hdr{position:relative}
+.tab-ico{width:1.05em;height:1.05em;vertical-align:-.17em;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+.me-chip{position:absolute;top:10px;right:10px;display:flex;align-items:center;gap:5px;font:700 .64rem var(--ffb);color:var(--sepia);background:var(--card);border:1px solid var(--border);border-radius:20px;padding:3px 9px 3px 8px;max-width:45vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;z-index:2}
+.me-chip:empty{display:none}
+.me-dot{width:8px;height:8px;border-radius:50%;background:#2fb34a;box-shadow:0 0 0 0 rgba(47,179,74,.6);animation:meping 2s infinite;flex:0 0 auto}
+.me-chip.off .me-dot{background:#9a9a9a;animation:none}
+@keyframes meping{0%{box-shadow:0 0 0 0 rgba(47,179,74,.55)}70%{box-shadow:0 0 0 6px rgba(47,179,74,0)}100%{box-shadow:0 0 0 0 rgba(47,179,74,0)}}
+@media(prefers-reduced-motion:reduce){.me-dot{animation:none}}
+@media(max-width:600px){.hdr:has(.me-chip:not(:empty)) .hdr-inner{padding-top:30px}.me-chip{top:8px;right:8px}}
 /* شريط "تكبير" تحت الصورة — يطلع بس إذا فيه صورة حقيقية */
 .info-zoom{position:absolute;bottom:-9px;left:50%;transform:translateX(-50%);white-space:nowrap;background:rgba(20,14,8,.9);color:#F0D49A;
   border:1px solid var(--gold);border-radius:20px;padding:1px 8px;font:700 .62rem var(--ffb);display:flex;gap:3px;align-items:center;cursor:zoom-in;z-index:2}
@@ -296,8 +304,8 @@ textarea.form-input{resize:vertical;min-height:52px}
 <div class="tabs-bar">
   <button class="tab-btn active" onclick="switchTab('drill')">🌳 الشجرة التفاعلية</button>
   <button class="tab-btn" onclick="switchTab('full')">🗺️ الشجرة الكاملة</button>
-  <button class="tab-btn" onclick="switchTab('profiles')">👥 بطاقات الأعضاء</button>
-  <button class="tab-btn" onclick="switchTab('log')">📜 السجل</button>
+  <button class="tab-btn" onclick="switchTab('profiles')">👥 الأعضاء</button>
+  <button class="tab-btn" onclick="switchTab('log')"><svg class="tab-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7"/><polyline points="3 4 3 9 8 9"/><polyline points="12 7 12 12 15.5 14"/></svg> السجل</button>
 </div>
 
 <div class="legend-bar">
@@ -564,9 +572,14 @@ function showMe(){
   const t=ME.name?('👤 أنت: '+ME.name):'';
   const lm=document.getElementById('log-me');if(lm)lm.textContent=t;
   let chip=document.getElementById('me-chip');
-  if(!chip){const sub=document.querySelector('.hdr-sub');if(sub){chip=document.createElement('div');chip.id='me-chip';chip.className='me-chip';sub.after(chip);}}
-  if(chip)chip.textContent=t;
+  if(!chip){const h=document.querySelector('.hdr');if(h){chip=document.createElement('div');chip.id='me-chip';chip.className='me-chip';h.appendChild(chip);}}
+  if(!chip)return;
+  if(!ME.name){chip.innerHTML='';return;}
+  const on=navigator.onLine!==false;
+  chip.classList.toggle('off',!on);
+  chip.innerHTML=`<span class="me-dot"></span>${on?'متصل':'غير متصل'}: ${escapeHtml(ME.name)}`;
 }
+window.addEventListener('online',()=>showMe());window.addEventListener('offline',()=>showMe());
 async function ensureIdentity(){
   ME.device=deviceId();
   if(!sb){return;}
