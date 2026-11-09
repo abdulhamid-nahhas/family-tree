@@ -210,11 +210,13 @@ textarea.info-field-input{resize:vertical;min-height:46px}
 
 /* ── FULL TREE TAB ── */
 .full-tree-wrap{flex:1;overflow:hidden;position:relative;background:var(--bg)}
-#full-tree-svg{cursor:grab;transition:transform .05s}
-#full-tree-svg:active{cursor:grabbing}
-.ft-line{stroke:var(--gold-lt);stroke-width:1;fill:none;opacity:.6}
-.ft-line-wife{stroke:var(--gold-lt);stroke-dasharray:4 2;opacity:.5}
-.ft-line-daughter{stroke:var(--gold-lt);stroke-width:1;fill:none;opacity:.6}
+.full-tree-wrap{touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;cursor:grab}
+.full-tree-wrap:active{cursor:grabbing}
+.ftl{stroke:var(--gold-lt);stroke-width:1.6;fill:none;opacity:.9}
+.ftl-d{stroke-dasharray:5 4}
+.ftname{font-family:var(--ffb);font-weight:700;fill:var(--sepia)}
+.ftrip{font-size:.72em}
+.ftn{pointer-events:none}
 
 /* ── PROFILES TAB ── */
 .profiles-wrap{flex:1;overflow-y:auto;padding:12px}
@@ -1764,100 +1766,166 @@ stage.addEventListener('click',closeInfo);
 
 /* ══ TAB2: FULL TREE ══ */
 let ftBuilt=false;
+/* ══ الشجرة الكاملة — خريطة ثابتة مثل الصورة: إصبعين للتكبير/التصغير وإصبع للتحريك، بدون أي ضغط ══
+   - أول ما تفتح: الكل ظاهر ومالي الشاشة بالضبط (هذا أقصى تصغير)
+   - أقصى تكبير: لما الدائرة توصل ٦٨ بكسل (نفس دوائر التفاعلية)
+   - الجوال قايم: بالعرض (زامل يمين في النص، الأجيال أعمدة لليسار) — الشاشة العريضة: من فوق لتحت */
+let FT=null;
 function buildFullTree(){
-  if(ftBuilt)return;ftBuilt=true;
-  const svg=document.getElementById('full-tree-svg');
   const wrap=document.getElementById('full-tree-wrap');
-  const W=wrap.offsetWidth||700,H=wrap.offsetHeight||500;
+  const W=wrap.clientWidth,H=wrap.clientHeight;
+  if(!W||!H)return;                       /* التبويب مخفي — نبني لما ينفتح */
+  if(ftBuilt&&FT&&FT.W===W&&FT.H===H)return;
+  ftBuilt=true;
+  const svg=document.getElementById('full-tree-svg');
   const NS='http://www.w3.org/2000/svg';
+  svg.innerHTML='';['width','height','viewBox'].forEach(a=>svg.removeAttribute(a));
+  svg.style.cssText='display:block;width:100%;height:100%';
+  const SIDE=H>W;                         /* الجوال قايم */
+  const root=rootId();
+  const RMAX=34;                          /* نصف قطر الدائرة المعتمدة (٦٨ بكسل) */
+  const PAD=14;
 
-  const positions={};
-  const wives=['abeer','faiza','layla'];
-  positions['zamil']={x:W/2,y:50};
-  const wifeW=W/(wives.length+1);
-  wives.forEach((w,i)=>{
-    const wx=wifeW*(i+1);positions[w]={x:wx,y:140};
-    const kids=FAM[w].children||[];
-    if(!kids.length)return;
-    const kw=wifeW/(kids.length+1);
-    kids.forEach((k,j)=>{
-      const kx=wifeW*i+kw*(j+1);positions[k]={x:kx,y:240};
-      const gkids=FAM[k]?.children||[];
-      const gkw=kw/(gkids.length+1);
-      gkids.forEach((gk,gi)=>{positions[gk]={x:wifeW*i+kw*j+gkw*(gi+1),y:340}});
-    });
+  /* ── الأبناء والأزواج ── */
+  const kidsOf=id=>{const m=FAM[id];if(!m)return[];return m.role==='root'?wivesOf(id).filter(w=>FAM[w]):directKids(id).filter(k=>FAM[k]);};
+  const spousesOf=id=>{const m=FAM[id];if(!m||m.role==='root'||m.role==='wife')return[];return wivesOf(id).filter(s=>FAM[s]);};
+
+  /* ── ١) كل فرع ياخذ مساحة على قد عدد أفراده (وحدات) ── */
+  const GAP=.25,span={};
+  const own=id=>1+spousesOf(id).length;
+  const calc=id=>{const ks=kidsOf(id);const k=ks.reduce((a,c)=>a+calc(c),0)+Math.max(0,ks.length-1)*GAP;return span[id]=Math.max(own(id),k);};
+  calc(root);
+  /* ── ٢) الأماكن: a = على امتداد الإخوان (الأكبر أول)، d = رقم الجيل ── */
+  const P={};
+  const place=(id,a0,d)=>{
+    const s=span[id],c=a0+s/2,o=own(id);
+    const a=c-(o-1)/2;                     /* الشخص ثم زوجه بعده، والمنتصف فوق الأبناء */
+    P[id]={a,d,mid:c};
+    spousesOf(id).forEach((sp,i)=>P[sp]={a:a+i+1,d,spouseOf:id});
+    const ks=kidsOf(id);const kw=ks.reduce((x,k)=>x+span[k],0)+Math.max(0,ks.length-1)*GAP;
+    let p=c-kw/2;ks.forEach(k=>{place(k,p,d+1);p+=span[k]+GAP;});
+  };
+  place(root,0,0);
+  const UA=span[root], UD=Math.max(...Object.values(P).map(p=>p.d));
+
+  /* ── ٣) المقاسات حسب الشاشة ── */
+  const LA=(SIDE?H:W)-2*PAD, LD=(SIDE?W:H)-2*PAD;   /* طول الشاشة على المحورين */
+  const ua0=LA/UA;                                  /* مسافة الوحدة عند التصغير الكامل */
+  const r0=Math.min(ua0*(SIDE?.29:.34),(LD/(UD+1))*.32);  /* بالعرض: نترك مكان للاسم تحت الدائرة */       /* نصف قطر الدائرة عند التصغير الكامل */
+  const ZMAX=Math.max(1,RMAX/r0);                   /* أقصى تكبير = الدائرة ٦٨ */
+  const ud0=UD?(LD-2*r0)/UD:0, udMax=SIDE?150:160;   /* المسافة بين الأجيال: تملأ الشاشة ثم تكبر بهدوء */
+  const kD=ZMAX>1?Math.log(Math.max(udMax,ud0)/ud0)/Math.log(ZMAX):0;
+  const st=FT&&FT.SIDE===SIDE&&FT.UA===UA?{z:FT.z,pa:FT.pa,pd:FT.pd}:{z:1,pa:PAD,pd:PAD+r0};
+
+  /* ── ٤) العناصر (مرة وحدة) ── */
+  const linesG=document.createElementNS(NS,'g');svg.appendChild(linesG);
+  const nodesG=document.createElementNS(NS,'g');svg.appendChild(nodesG);
+  const lines=[];
+  const mkPath=dashed=>{const p=document.createElementNS(NS,'path');p.setAttribute('class','ftl'+(dashed?' ftl-d':''));linesG.appendChild(p);return p;};
+  Object.keys(P).forEach(id=>{
+    const p=P[id];
+    if(p.spouseOf){lines.push({t:'sp',id,o:p.spouseOf,el:mkPath(true)});return;}
+    const ks=kidsOf(id).filter(k=>P[k]);if(!ks.length)return;
+    const dashed=FAM[id].role==='root';
+    lines.push({t:'trunk',id,ks,el:mkPath(dashed)});
+    ks.forEach(k=>lines.push({t:'drop',id,k,el:mkPath(dashed||!!FAM[k].rada)}));
+  });
+  const nodes=Object.keys(P).map(id=>{
+    const m=FAM[id];
+    const g=document.createElementNS(NS,'g');g.setAttribute('class','ftn');
+    const col=m.sex==='f'?'#C5796A':'#6A8FAF';
+    const cid='ftc_'+id.replace(/[^a-zA-Z0-9_]/g,'_');
+    const R=RMAX;
+    const pic=(m.photo&&/^(data:image|https?:)/.test(m.photo))
+      ?`<image href="${m.photo}" x="${-R}" y="${-R}" width="${2*R}" height="${2*R}" clip-path="url(#${cid})" preserveAspectRatio="xMidYMid slice"/>`
+      :`<g clip-path="url(#${cid})"><circle r="${R}" fill="${m.sex==='f'?'#F6E7E2':'#E6EDF4'}"/><svg x="${-R}" y="${-R}" width="${2*R}" height="${2*R}" viewBox="0 0 64 64">${avatarSVG(m.sex).replace(/^<svg[^>]*>|<\/svg>$/g,'')}</svg></g>`;
+    const name=escapeHtml(shortName(m.name,id))+(isDeceased(id)?` <tspan class="ftrip">${ripText(id)}</tspan>`:'');
+    /* طبقتين: نقطة ملونة (للتصغير) — وصورة كاملة (لما تكبّر) */
+    g.innerHTML=`<circle class="ftdot" r="${R}" fill="${col}"/><g class="ftpic"><clipPath id="${cid}"><circle r="${R}"/></clipPath>${pic}<circle r="${R}" fill="none" stroke="${col}" stroke-width="3.5" ${m.rada?'stroke-dasharray="7 4"':''}/></g><text text-anchor="middle" class="ftname">${name}</text>`;
+    nodesG.appendChild(g);
+    return {id,g,txt:g.querySelector('text'),dot:g.querySelector('.ftdot'),pic:g.querySelector('.ftpic')};
   });
 
-  let minX=1e9,maxX=-1e9,maxY=0;
-  Object.values(positions).forEach(p=>{minX=Math.min(minX,p.x);maxX=Math.max(maxX,p.x);maxY=Math.max(maxY,p.y)});
-  const svgW=Math.max(maxX+60,W),svgH=maxY+70;
-  svg.setAttribute('viewBox',`0 0 ${svgW} ${svgH}`);
-  svg.setAttribute('width',svgW);svg.setAttribute('height',svgH);
-
-  function mkLine(x1,y1,x2,y2,childId=null,wife=false){
-    const path=document.createElementNS(NS,'path');
-    const my=(y1+y2)/2;
-    path.setAttribute('d',`M${x1},${y1} C${x1},${my} ${x2},${my} ${x2},${y2}`);
-    let cls='ft-line';
-    if(wife) cls+=' ft-line-wife';
-    else if(childId){
-      const rt=FAM[childId]?.relType;
-      const sx=FAM[childId]?.sex;
-      if(rt==='daughter'||rt==='daughter-rada'||(rt==null&&sx==='f')) cls+=' ft-line-daughter';
-    }
-    path.setAttribute('class',cls);
-    svg.insertBefore(path,svg.firstChild);
-  }
-  function mkNode(id,pos){
-    const m=FAM[id];if(!m)return;
-    const g=document.createElementNS(NS,'g');
-    g.setAttribute('transform',`translate(${pos.x},${pos.y})`);
-    g.style.cursor='pointer';
-    const fill=m.sex==='f'?'#C5796A':'#6A8FAF';
-    const r=m.role==='root'?11:7;
-    const c=document.createElementNS(NS,'circle');
-    c.setAttribute('r',r);c.setAttribute('fill',fill);c.setAttribute('opacity','.85');
-    c.setAttribute('stroke','#FAF6EE');c.setAttribute('stroke-width','1.5');
-    if(m.rada)c.setAttribute('stroke-dasharray','3 2');
-    const t=document.createElementNS(NS,'text');
-    t.setAttribute('text-anchor','middle');t.setAttribute('dy',r+11);
-    t.setAttribute('font-size',m.role==='root'?'10':'8');
-    t.setAttribute('fill','var(--sepia)');t.setAttribute('font-family','var(--ffb)');
-    t.textContent=m.name;
-    if((m.children||[]).length>0){
-      const d=document.createElementNS(NS,'circle');
-      d.setAttribute('cx',r-1);d.setAttribute('cy',-(r-1));d.setAttribute('r',3);
-      d.setAttribute('fill','#7AAF8A');d.setAttribute('stroke','#FAF6EE');d.setAttribute('stroke-width','1');
-      g.appendChild(d);
-    }
-    g.appendChild(c);g.appendChild(t);
-    g.addEventListener('click',()=>{switchTab('drill');setTimeout(()=>{showRoot();onNodeClick(id)},100)});
-    svg.appendChild(g);
-  }
-
-  const pZ=positions['zamil'];
-  wives.forEach(w=>{
-    const pw=positions[w];if(!pw)return;
-    mkLine(pZ.x,pZ.y,pw.x,pw.y,null,true);
-    (FAM[w].children||[]).forEach(k=>{
-      const pk=positions[k];if(!pk)return;
-      mkLine(pw.x,pw.y,pk.x,pk.y,k);
-      (FAM[k]?.children||[]).forEach(gk=>{const pg=positions[gk];if(pg)mkLine(pk.x,pk.y,pg.x,pg.y,gk)});
+  /* ── ٥) الرسم حسب التكبير الحالي ── */
+  FT={W,H,SIDE,UA,UD,ZMAX,...st};
+  const ua=z=>ua0*z, ud=z=>ud0*Math.pow(z,kD), rr=z=>Math.min(RMAX,r0*z);
+  /* إحداثيات الشاشة من (a,d) */
+  const XY=(a,d)=>{const sa=FT.pa+a*ua(FT.z), sd=FT.pd+d*ud(FT.z);
+    return SIDE?[W-sd,sa]:[W-sa,sd];};
+  /* ── قواعد الظهور حسب حجم الدائرة على الشاشة ──
+     أقل من ١٨ بكسل: نقاط ملونة بس (أزرق/وردي)
+     من ١٨ بكسل: تطلع الصور
+     من ٢٨ بكسل: تطلع الأسماء (الخط يكبر لين ١٤ بكسل)
+     ٦٨ بكسل: أقصى تكبير */
+  const PIC_AT=9, NAME_AT=14;
+  let lastLod='';
+  const draw=()=>{
+    const r=rr(FT.z),k=r/RMAX;
+    const showPic=r>=PIC_AT, showName=r>=NAME_AT;
+    const lod=(showPic?1:0)+(showName?2:0);
+    const fs=Math.min(14,Math.max(9,r*.42));          /* حجم الاسم على الشاشة */
+    if(lod+''!==lastLod){nodes.forEach(n=>{n.dot.style.display=showPic?'none':'';n.pic.style.display=showPic?'':'none';n.txt.style.display=showName?'':'none';});lastLod=lod+'';}
+    nodes.forEach(n=>{const p=P[n.id];const [x,y]=XY(p.a,p.d);
+      n.g.setAttribute('transform',`translate(${x.toFixed(1)},${y.toFixed(1)}) scale(${k.toFixed(4)})`);
+      if(showName){n.txt.setAttribute('font-size',(fs/k).toFixed(1));n.txt.setAttribute('y',(RMAX+(fs+4)/k).toFixed(1));}});
+    const busOff=ud(FT.z)/2;
+    lines.forEach(L=>{
+      if(L.t==='sp'){const [x1,y1]=XY(P[L.o].a,P[L.o].d),[x2,y2]=XY(P[L.id].a,P[L.id].d);
+        const g=r+3;
+        L.el.setAttribute('d',SIDE?`M${x1},${y1+g+(showName?fs+6:0)} L${x2},${y2-g}`:`M${x1-g},${y1} L${x2+g},${y2}`);return;}
+      const p=P[L.id];
+      if(L.t==='trunk'){
+        const [mx,my]=XY(p.mid,p.d);  /* منتصف الشخص وزوجه */
+        const as=L.ks.map(k=>XY(P[k].a,P[k].d));
+        if(SIDE){const bx=mx-busOff;const ys=as.map(q=>q[1]);
+          L.el.setAttribute('d',`M${mx-(p.mid===p.a?r:0)},${my} L${bx},${my} M${bx},${Math.min(my,...ys)} L${bx},${Math.max(my,...ys)}`);}
+        else{const by=my+busOff;const xs=as.map(q=>q[0]);
+          L.el.setAttribute('d',`M${mx},${my+(p.mid===p.a?r+(showName?fs+8:0):0)} L${mx},${by} M${Math.min(mx,...xs)},${by} L${Math.max(mx,...xs)},${by}`);}
+        return;}
+      /* نزول لكل ابن */
+      const [mx,my]=XY(p.mid,p.d),[kx,ky]=XY(P[L.k].a,P[L.k].d);
+      if(SIDE){const bx=mx-busOff;L.el.setAttribute('d',`M${bx},${ky} L${kx+r+2},${ky}`);}
+      else{const by=my+busOff;L.el.setAttribute('d',`M${kx},${by} L${kx},${ky-r-2}`);}
     });
-  });
-  Object.entries(positions).forEach(([id,pos])=>mkNode(id,pos));
+  };
+  /* حدود التحريك: ما تطلع الخريطة برا الشاشة */
+  const clamp=()=>{
+    const la=UA*ua(FT.z), ld=UD*ud(FT.z)+2*rr(FT.z);
+    const VA=SIDE?H:W, VD=SIDE?W:H;
+    FT.pa=la+2*PAD<=VA?(VA-la)/2:Math.min(PAD,Math.max(VA-la-PAD,FT.pa));
+    const minD=VD-ld-PAD+rr(FT.z);
+    FT.pd=ld+2*PAD<=VD?(VD-ld)/2+rr(FT.z):Math.min(PAD+rr(FT.z),Math.max(minD,FT.pd));
+  };
+  /* تكبير حول نقطة (sx,sy) على الشاشة */
+  const zoomAt=(nz,sx,sy)=>{
+    nz=Math.max(1,Math.min(ZMAX,nz));
+    const sa=SIDE?sy:W-sx, sd=SIDE?W-sx:sy;
+    const a=(sa-FT.pa)/ua(FT.z), d=(sd-FT.pd)/ud(FT.z||1);
+    FT.z=nz;FT.pa=sa-a*ua(nz);FT.pd=sd-(ud(nz)?d*ud(nz):0);
+    clamp();draw();
+  };
+  const panBy=(dx,dy)=>{const da=SIDE?dy:-dx, dd=SIDE?-dx:dy;FT.pa+=da;FT.pd+=dd;clamp();draw();};
+  FT.zoomAt=zoomAt;FT.panBy=panBy;FT.draw=draw;FT.state=()=>({z:FT.z,ZMAX,r:rr(FT.z),SIDE,count:nodes.length});
+  clamp();draw();
 
-  // Pan/Zoom
-  let vx=0,vy=0,sc=1,drag=false,sx,sy,svx,svy;
-  function applyT(){svg.style.transform=`translate(${vx}px,${vy}px) scale(${sc})`;svg.style.transformOrigin='0 0'}
-  wrap.addEventListener('mousedown',e=>{drag=true;sx=e.clientX;sy=e.clientY;svx=vx;svy=vy});
-  window.addEventListener('mousemove',e=>{if(!drag)return;vx=svx+(e.clientX-sx);vy=svy+(e.clientY-sy);applyT()});
-  window.addEventListener('mouseup',()=>drag=false);
-  wrap.addEventListener('wheel',e=>{e.preventDefault();sc=Math.max(.3,Math.min(3,sc-e.deltaY*.001));applyT()},{passive:false});
-  let t0={};
-  wrap.addEventListener('touchstart',e=>{[...e.touches].forEach(t=>t0[t.identifier]={x:t.clientX,y:t.clientY});svx=vx;svy=vy},{passive:true});
-  wrap.addEventListener('touchmove',e=>{if(e.touches.length===1){const t=e.touches[0];const d=t0[t.identifier];if(!d)return;vx=svx+(t.clientX-d.x);vy=svy+(t.clientY-d.y);applyT()}},{passive:true});
+  /* ── ٦) الأصابع والماوس — بدون أي ضغط على الأشخاص ── */
+  const pts=new Map();let last=null;
+  const local=(x,y)=>{const b=wrap.getBoundingClientRect();return[x-b.left,y-b.top];};
+  const snap=()=>{const v=[...pts.values()];if(v.length>=2){const[a,b]=v;last={d:Math.hypot(a[0]-b[0],a[1]-b[1]),m:local((a[0]+b[0])/2,(a[1]+b[1])/2)};}else if(v.length===1){last={p:local(v[0][0],v[0][1])};}else last=null;};
+  wrap.onpointerdown=e=>{try{wrap.setPointerCapture(e.pointerId);}catch(_){}pts.set(e.pointerId,[e.clientX,e.clientY]);snap();};
+  wrap.onpointermove=e=>{if(!pts.has(e.pointerId))return;pts.set(e.pointerId,[e.clientX,e.clientY]);
+    const v=[...pts.values()];
+    if(v.length>=2&&last&&last.d){const[a,b]=v;const d=Math.hypot(a[0]-b[0],a[1]-b[1]),m=local((a[0]+b[0])/2,(a[1]+b[1])/2);
+      panBy(m[0]-last.m[0],m[1]-last.m[1]);zoomAt(FT.z*d/last.d,m[0],m[1]);last={d,m};}
+    else if(v.length===1&&last&&last.p){const p=local(v[0][0],v[0][1]);panBy(p[0]-last.p[0],p[1]-last.p[1]);last={p};}
+  };
+  const up=e=>{pts.delete(e.pointerId);snap();};
+  wrap.onpointerup=up;wrap.onpointercancel=up;
+  wrap.onwheel=e=>{e.preventDefault();const[x,y]=local(e.clientX,e.clientY);zoomAt(FT.z*(e.deltaY<0?1.12:1/1.12),x,y);};
+  wrap.ondblclick=e=>e.preventDefault();
 }
+/* تدوير الجوال أو تغيير حجم النافذة: نعيد الحساب */
+window.addEventListener('resize',()=>{if(activeTab==='full'){ftBuilt=false;FT=FT&&{...FT,W:0};buildFullTree();}});
 
 /* ══ TAB3: PROFILES ══ */
 function getBranch(id){
