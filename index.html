@@ -206,7 +206,10 @@ textarea.info-field-input{resize:vertical;min-height:46px}
 .profiles-wrap{flex:1;overflow-y:auto;padding:12px}
 .profiles-search{width:100%;padding:8px 14px;border-radius:12px;border:1.5px solid var(--border);background:var(--sand);color:var(--fg);font-family:var(--ffb);font-size:.85rem;margin-bottom:12px}
 .profiles-search:focus{outline:none;border-color:var(--gold)}
-.pf-chips{display:flex;gap:6px;flex-wrap:wrap;margin:-4px 0 8px}
+.pf-chips{display:flex;gap:6px;flex-wrap:nowrap;overflow-x:auto;margin:-4px -12px 8px;padding:2px 12px 4px;scrollbar-width:none;-webkit-overflow-scrolling:touch;scroll-snap-type:x proximity}
+.pf-chips::-webkit-scrollbar{display:none}
+.pf-chip{flex:0 0 auto;scroll-snap-align:start}
+.pf-sep{flex:0 0 1px;background:var(--border);margin:4px 2px}
 .pf-chip{border:1.5px solid var(--border);background:var(--card);color:var(--sepia);border-radius:20px;padding:4px 11px;font:700 .74rem var(--ffb);cursor:pointer;display:flex;gap:5px;align-items:center}
 .pf-chip b{font-weight:700;color:var(--gold);font-variant-numeric:tabular-nums}
 .pf-chip.on{background:var(--gold);border-color:var(--gold);color:#fff}.pf-chip.on b{color:#fff}
@@ -1839,7 +1842,7 @@ function getBranch(id){
 }
 
 /* ══ بطاقات الأعضاء: بحث بالاسم الأول أولاً + فلاتر ══ */
-let PF={q:'',chip:'all'};
+let PF={q:'',sel:new Set()};
 function normAr(t){return String(t||'').replace(/[\u064B-\u0652\u0640]/g,'').replace(/[أإآ]/g,'ا').replace(/ة/g,'ه').replace(/ى/g,'ي').trim().toLowerCase();}
 function firstOf(id){return FAM[id]?.short||shortName(FAM[id]?.name,id)||'';}
 /* أبناء الشخص المباشرين (بدون الأزواج) — للزوجة: أبناؤها من زوجها */
@@ -1865,33 +1868,50 @@ function famStats(id){
 function rootId(){return Object.keys(FAM).find(k=>FAM[k].role==='root')||'zamil';}
 function isBlood(id){const m=FAM[id];return m&&m.role!=='wife'&&m.role!=='root'&&!m.rada;}
 /* الفلاتر: الكل، أبناء كل زوجة لزامل، الرضاعة، الأولاد، البنات */
+/* الفلاتر — نفس المجموعة: أي واحد منها (أو) — بين المجموعات: لازم كلها (و)
+   مثال: عبير + البنات = بنات عبير — عبير + فائزة = أبناء الاثنين */
 function profileChips(){
-  const chips=[{key:'all',label:'الكل',test:()=>true}];
   const root=rootId();
+  const notSpouse=id=>FAM[id].role!=='wife'&&FAM[id].role!=='root';
   const zKids=new Set(directKids(root).filter(k=>!FAM[k].rada));
+  const zDirect=new Set(directKids(root));
   const zAll=new Set();{const walk=k=>directKids(k).forEach(g=>{if(!zAll.has(g)){zAll.add(g);walk(g);}});walk(root);}
-  chips.push({key:'zk',label:'أبناء زامل',test:id=>zKids.has(id)});
-  chips.push({key:'zg',label:'أحفاد زامل',test:id=>zAll.has(id)&&!zKids.has(id)&&!directKids(root).includes(id)});
-  if(root) wivesOf(root).forEach(w=>{
+  const chips=[
+    {key:'zk',g:'lin',label:'زامل',test:id=>zKids.has(id)},
+    {key:'zg',g:'lin',label:'أحفاد زامل',test:id=>zAll.has(id)&&!zDirect.has(id)&&notSpouse(id)},
+  ];
+  wivesOf(root).forEach(w=>{
     const kids=new Set(kidsOfCouple(root,w));
-    chips.push({key:'w:'+w,label:'أبناء '+firstOf(w),test:id=>kids.has(id)&&!FAM[id].rada});
+    chips.push({key:'w:'+w,g:'lin',label:firstOf(w),test:id=>kids.has(id)&&!FAM[id].rada});
   });
-  chips.push({key:'rada',label:'الرضاعة',test:id=>!!FAM[id].rada});
-  chips.push({key:'m',label:'الأولاد',test:id=>isBlood(id)&&FAM[id].sex!=='f'});
-  chips.push({key:'f',label:'البنات',test:id=>isBlood(id)&&FAM[id].sex==='f'});
-  chips.push({key:'alive',label:'الأحياء',test:id=>!isDeceased(id)});
-  chips.push({key:'dead',label:'المتوفين',test:id=>isDeceased(id)});
-  chips.push({key:'inc',label:'⚠️ بيانات ناقصة',test:id=>missingFields(id).length>0});
+  chips.push({key:'rada',g:'lin',label:'الرضاعة',test:id=>!!FAM[id].rada&&notSpouse(id)});
+  chips.push({key:'m',g:'sex',label:'الأولاد',test:id=>notSpouse(id)&&FAM[id].sex!=='f'});
+  chips.push({key:'f',g:'sex',label:'البنات',test:id=>notSpouse(id)&&FAM[id].sex==='f'});
+  chips.push({key:'alive',g:'life',label:'الأحياء',test:id=>!isDeceased(id)});
+  chips.push({key:'dead',g:'life',label:'المتوفين',test:id=>isDeceased(id)});
+  chips.push({key:'inc',g:'inc',label:'⚠️ ناقص البيانات',test:id=>missingFields(id).length>0});
   return chips;
 }
 function buildProfiles(){
   const grid=document.getElementById('profiles-grid');
   const chips=profileChips();
-  if(!chips.some(c=>c.key===PF.chip))PF.chip='all';
+  [...PF.sel].forEach(k=>{if(!chips.some(c=>c.key===k))PF.sel.delete(k);});
   const ids=Object.keys(FAM);
-  document.getElementById('pf-chips').innerHTML=chips.map(c=>`<button type="button" class="pf-chip${c.key===PF.chip?' on':''}" data-k="${c.key}">${c.label} <b>${ids.filter(c.test).length}</b></button>`).join('');
-  document.querySelectorAll('.pf-chip').forEach(b=>b.onclick=()=>{PF.chip=b.dataset.k;buildProfiles();});
-  const chip=chips.find(c=>c.key===PF.chip);
+  const box=document.getElementById('pf-chips');const sx=box.scrollLeft;
+  let html=`<button type="button" class="pf-chip${PF.sel.size?'':' on'}" data-k="all">الكل <b>${ids.length}</b></button>`,lastG='';
+  chips.forEach(c=>{
+    if(c.g!==lastG){html+='<span class="pf-sep"></span>';lastG=c.g;}
+    html+=`<button type="button" class="pf-chip${PF.sel.has(c.key)?' on':''}" data-k="${c.key}">${c.label} <b>${ids.filter(c.test).length}</b></button>`;
+  });
+  box.innerHTML=html;box.scrollLeft=sx;
+  box.querySelectorAll('.pf-chip').forEach(b=>b.onclick=()=>{
+    const k=b.dataset.k;
+    if(k==='all')PF.sel.clear();else if(PF.sel.has(k))PF.sel.delete(k);else PF.sel.add(k);
+    buildProfiles();
+  });
+  /* نطبّق: داخل المجموعة "أو"، وبين المجموعات "و" */
+  const groups={};chips.filter(c=>PF.sel.has(c.key)).forEach(c=>(groups[c.g]=groups[c.g]||[]).push(c.test));
+  const chip={test:id=>Object.values(groups).every(ts=>ts.some(t=>t(id)))};
   const q=normAr(PF.q);
   /* الترتيب: يبدأ بالاسم الأول ← فيه الاسم الأول ← في الاسم الكامل أو الفرع — وداخل كل مجموعة أبجدي */
   const rank=id=>{
@@ -1905,7 +1925,8 @@ function buildProfiles(){
   const baseOrder=['zamil','abeer','faiza','layla','bushra'];
   let list=ids.filter(id=>chip.test(id)).map(id=>({id,r:rank(id)})).filter(x=>x.r<9);
   list.sort((a,b)=>a.r-b.r||(q?firstOf(a.id).localeCompare(firstOf(b.id),'ar'):((baseOrder.indexOf(a.id)+1||99)-(baseOrder.indexOf(b.id)+1||99))));
-  document.getElementById('pf-count').textContent=list.length+' عضو';
+  const selNames=[...PF.sel].map(k=>chips.find(c=>c.key===k)?.label).filter(Boolean);
+  document.getElementById('pf-count').textContent=list.length+' عضو'+(selNames.length?' — '+selNames.join(' + '):'');
   grid.innerHTML='';
   list.forEach(({id})=>{
     const m=FAM[id];
