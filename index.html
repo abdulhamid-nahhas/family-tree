@@ -712,7 +712,9 @@ function placeNodes(ids,parentId){
     }
 
     el.style.left=x+'px'; el.style.top=y+'px';
+    const seqP=typeof renderSeq==='number'?renderSeq:0;
     setTimeout(()=>{
+      if(typeof renderSeq==='number'&&seqP!==renderSeq)return; /* شاشة قديمة — لا تُظهرها */
       el.classList.remove('hidden');el.classList.add('visible');
       const needed=y+160;
       if(parseInt(canvas.style.height||0)<needed) canvas.style.height=needed+'px';
