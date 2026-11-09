@@ -886,6 +886,9 @@ function onNodeClick(id){
   /* الضغط على الكارد: يفتح الأبناء أو يعرض الشخص مع زوجاته */
   const m=FAM[id];if(!m)return;
   /* الزوجات والأزواج (role=wife) لا يُفتح لهم view مستقل — نتجاهل الضغط */
+  /* لو الشخص مفتوح قبل في نفس المسار: نرجع لنقطته بدل ما نكرره — عشان زر الرجوع يودّي لأهله مو للزوجة */
+  {const key=m.role==='wife'?'sp:'+id:id;const at=history.lastIndexOf(key);
+   if(at>=0&&at<history.length-1)history.length=at;}
   const curView=history[history.length-1];
   /* الضغط على الصورة ما يفتح المعلومات — المعلومات من زر ⓘ فقط */
   if(m.role==='wife'){
