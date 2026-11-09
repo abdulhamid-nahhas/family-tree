@@ -1260,7 +1260,26 @@ function closeInfo(){
   cancelDelete();
 }
 
+/* أبناء الشخص — للزوجة: أبناؤها من زوجها أو المسجلين عندها */
+function kidsBlockingDelete(id){
+  const m=FAM[id];if(!m)return[];
+  const own=(m.children||[]).filter(k=>FAM[k]&&FAM[k].role!=='wife');
+  if(m.role==='wife'&&m.sex==='f'){
+    const h=husbandOf(id);
+    const viaH=h?kidsOfCouple(h,id):[];
+    return [...new Set([...own,...viaH])];
+  }
+  return own;
+}
+/* قاعدة: ما ينحذف أحد عنده أبناء — لازم ينحذفون أو ينقلون أول */
 function requestDelete(){
+  const kids=kidsBlockingDelete(editingId);
+  if(kids.length){
+    const names=kids.slice(0,4).map(k=>FAM[k].short||shortName(FAM[k].name,k)).join('، ')+(kids.length>4?' …':'');
+    const m=FAM[editingId];
+    showToast('⛔ ما ينفع '+(m.sex==='f'?'تنحذف — عندها':'ينحذف — عنده')+' أبناء ('+kids.length+'): '+names);
+    return;
+  }
   document.getElementById('delete-confirm-bar').style.display='';
 }
 function cancelDelete(){
@@ -1277,6 +1296,7 @@ function confirmDelete(){
   if(!editingId)return;
   const m=FAM[editingId];
   if(!m||m.role==='root')return;
+  if(kidsBlockingDelete(editingId).length){requestDelete();return;}
   // remove from parent's children or spouseIds
   const parId=m.par;
   if(parId&&FAM[parId]){
