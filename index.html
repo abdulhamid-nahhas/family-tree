@@ -31,22 +31,27 @@ body{font-family:var(--ffb);background:var(--bg);color:var(--fg);display:flex;fl
 
 .hdr{background:var(--sand);border-bottom:2px solid var(--gold);flex-shrink:0}
 .hdr-stripe{height:4px;background:linear-gradient(90deg,var(--rose),var(--gold),var(--gold-lt),var(--gold),var(--rose))}
-.hdr-inner{padding:10px 16px 8px;text-align:center}
-.hdr-logo{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:2px}
-.hdr-title{font-family:var(--ff);font-size:clamp(1rem,4vw,1.7rem);font-weight:700;color:var(--sepia)}
-.hdr-sub{font-size:.6rem;color:var(--gold);font-weight:600;letter-spacing:.1em}
-.hdr-nasab-wrap{margin-top:4px;text-align:center}
-.nasab-toggle{background:none;border:none;cursor:pointer;display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border-radius:6px;border:1px solid color-mix(in srgb,var(--gold) 35%,transparent)}
-.nasab-label{font-family:var(--ffb);font-size:.6rem;color:var(--gold);font-weight:600}
-.nasab-arrow{font-size:.55rem;color:var(--gold);transition:transform .25s}
+.hdr-row{display:flex;align-items:center;gap:10px;padding:8px 12px 8px}
+.hdr-ico{width:42px;height:42px;flex:0 0 auto}
+.hdr-txt{flex:1;min-width:0}
+.hdr-title{font-family:var(--ff);font-size:clamp(1.05rem,4.6vw,1.5rem);font-weight:700;color:var(--sepia);line-height:1.25}
+.hdr-sub{font:700 .66rem var(--ffb);color:var(--gold);display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+.nasab-toggle{background:none;border:none;cursor:pointer;display:inline-flex;align-items:center;gap:3px;padding:0;color:var(--gold);font:inherit}
+.nasab-label{font:inherit;color:inherit;text-decoration:underline;text-underline-offset:3px}
+.nasab-arrow{font-size:.5rem;color:var(--gold);transition:transform .25s;text-decoration:none}
 .nasab-arrow.open{transform:rotate(180deg)}
-.hdr-nasab{font-family:var(--ff);font-size:.62rem;color:var(--sepia);opacity:.7;line-height:2;margin-top:5px;padding:6px 10px;background:color-mix(in srgb,var(--gold) 8%,transparent);border-radius:8px;border:1px solid color-mix(in srgb,var(--gold) 20%,transparent);
-  word-break:break-word;white-space:normal;overflow-wrap:break-word;text-align:center;max-width:100%;box-sizing:border-box}
+.hdr-nasab{overflow-x:auto;overflow-y:hidden;scrollbar-width:none;-webkit-overflow-scrolling:touch;border-top:1px solid var(--border);background:color-mix(in srgb,var(--gold) 7%,transparent);padding:7px 12px;animation:nasabIn .25s ease}
+.hdr-nasab[hidden]{display:none}
+.hdr-nasab::-webkit-scrollbar{display:none}
+.nasab-track{white-space:nowrap;font:600 .8rem var(--ff);color:var(--sepia);width:max-content;padding-inline-end:12px;display:flex;align-items:center;gap:6px}
+.nasab-track span:first-child{color:var(--gold);font-weight:800}
+.nasab-track i{font-style:normal;color:var(--gold-lt);font-size:.75rem}
+@keyframes nasabIn{from{opacity:0;max-height:0}to{opacity:1;max-height:60px}}
 
 .tabs-bar{background:var(--sand-mid);border-bottom:2px solid var(--gold);flex-shrink:0;
   display:flex;overflow-x:auto;scrollbar-width:none}
 .tabs-bar::-webkit-scrollbar{display:none}
-.tab-btn{flex:1;min-width:90px;padding:9px 14px;border:none;background:transparent;
+.tab-btn{flex:1;min-width:0;padding:9px 6px;white-space:nowrap;border:none;background:transparent;
   font-family:var(--ffb);font-size:.78rem;font-weight:600;color:var(--sepia);opacity:.6;
   cursor:pointer;border-bottom:3px solid transparent;transition:all .2s;white-space:nowrap}
 .tab-btn.active{opacity:1;border-bottom-color:var(--gold);background:color-mix(in srgb,var(--gold) 8%,transparent)}
@@ -163,13 +168,12 @@ body{font-family:var(--ffb);background:var(--bg);color:var(--fg);display:flex;fl
 .name-err{font-size:.75rem;color:#e57373}
 .hdr{position:relative}
 .tab-ico{width:1.05em;height:1.05em;vertical-align:-.17em;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
-.me-chip{position:absolute;top:10px;right:10px;display:flex;align-items:center;gap:5px;font:700 .64rem var(--ffb);color:var(--sepia);background:var(--card);border:1px solid var(--border);border-radius:20px;padding:3px 9px 3px 8px;max-width:45vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;z-index:2}
+.me-chip{display:flex;flex:0 0 auto;align-items:center;gap:5px;font:700 .64rem var(--ffb);color:var(--sepia);background:var(--card);border:1px solid var(--border);border-radius:20px;padding:3px 9px 3px 8px;max-width:42vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .me-chip:empty{display:none}
 .me-dot{width:8px;height:8px;border-radius:50%;background:#2fb34a;box-shadow:0 0 0 0 rgba(47,179,74,.6);animation:meping 2s infinite;flex:0 0 auto}
 .me-chip.off .me-dot{background:#9a9a9a;animation:none}
 @keyframes meping{0%{box-shadow:0 0 0 0 rgba(47,179,74,.55)}70%{box-shadow:0 0 0 6px rgba(47,179,74,0)}100%{box-shadow:0 0 0 0 rgba(47,179,74,0)}}
 @media(prefers-reduced-motion:reduce){.me-dot{animation:none}}
-@media(max-width:600px){.hdr:has(.me-chip:not(:empty)) .hdr-inner{padding-top:30px}.me-chip{top:8px;right:8px}}
 /* شريط "تكبير" تحت الصورة — يطلع بس إذا فيه صورة حقيقية */
 .info-zoom{position:absolute;bottom:-9px;left:50%;transform:translateX(-50%);white-space:nowrap;background:rgba(20,14,8,.9);color:#F0D49A;
   border:1px solid var(--gold);border-radius:20px;padding:1px 8px;font:700 .62rem var(--ffb);display:flex;gap:3px;align-items:center;cursor:zoom-in;z-index:2}
@@ -273,37 +277,26 @@ textarea.form-input{resize:vertical;min-height:52px}
 
 <header class="hdr">
   <div class="hdr-stripe"></div>
-  <div class="hdr-inner">
-    <div class="hdr-logo">
-      <svg width="40" height="40" viewBox="0 0 44 44" fill="none">
-        <rect x="19.5" y="28" width="5" height="13" rx="2.5" fill="#B8862A"/>
-        <ellipse cx="22" cy="24" rx="13" ry="9" fill="#7AAF8A" opacity=".3"/>
-        <ellipse cx="22" cy="19" rx="10" ry="8" fill="#B8862A" opacity=".45"/>
-        <ellipse cx="22" cy="13" rx="8" ry="7" fill="#D4A84B" opacity=".8"/>
-        <circle cx="22" cy="7" r="3" fill="#D4A84B"/>
-        <circle cx="14" cy="14" r="2" fill="#D4A84B" opacity=".7"/>
-        <circle cx="30" cy="14" r="2" fill="#D4A84B" opacity=".7"/>
-        <circle cx="11" cy="22" r="1.8" fill="#7AAF8A" opacity=".9"/>
-        <circle cx="33" cy="22" r="1.8" fill="#7AAF8A" opacity=".9"/>
-      </svg>
-      <div>
-        <div class="hdr-title">شجرة آل نحاس</div>
-        <div class="hdr-sub">شجرة العائلة — ١٤٤٧ هـ</div>
-      </div>
-    </div>
-    <div class="hdr-nasab-wrap">
-      <button class="nasab-toggle" id="nasab-toggle" onclick="toggleNasab()">
-        <span class="nasab-label">النسب الكامل</span>
-        <span class="nasab-arrow" id="nasab-arrow">▼</span>
-      </button>
-      <div class="hdr-nasab" id="nasab-text" hidden>زامل جميل سليمان عبيد عويد حسن شداد محمد عبدالله شاكر زيد هاشم سالم عبدالله بن عمر بن الخطاب ﵁</div>
+  <div class="hdr-row">
+    <svg class="hdr-ico" viewBox="0 0 100 100" aria-hidden="true">
+      <circle cx="50" cy="50" r="46" fill="#FBF5E6" stroke="#B8862A" stroke-width="3"/>
+      <circle cx="50" cy="50" r="40" fill="none" stroke="#D4A84B" stroke-width="1" stroke-dasharray="2 2"/>
+      <path d="M47 80 L47 56 L53 56 L53 80 C56 81 60 82 63 83 L37 83 C40 82 44 81 47 80Z" fill="#7A4E26"/>
+      <path d="M50 58 C44 54 38 53 33 50 M50 58 C56 54 62 53 67 50" stroke="#7A4E26" stroke-width="2.6" stroke-linecap="round" fill="none"/>
+      <g fill="#4E8F3E"><circle cx="50" cy="36" r="15"/><circle cx="36" cy="45" r="11"/><circle cx="64" cy="45" r="11"/><circle cx="41" cy="30" r="9"/><circle cx="59" cy="30" r="9"/></g>
+      <g fill="#C8963A"><circle cx="44" cy="38" r="2"/><circle cx="56" cy="35" r="2"/><circle cx="50" cy="45" r="2"/><circle cx="38" cy="47" r="1.8"/><circle cx="62" cy="47" r="1.8"/></g>
+    </svg>
+    <div class="hdr-txt">
+      <div class="hdr-title">شجرة آل نحاس</div>
+      <div class="hdr-sub"><span id="hijri-year">١٤٤٨ هـ</span> · <button class="nasab-toggle" id="nasab-toggle" onclick="toggleNasab()"><span class="nasab-label">النسب الكامل</span> <span class="nasab-arrow" id="nasab-arrow">▼</span></button></div>
     </div>
   </div>
+  <div class="hdr-nasab" id="nasab-text" hidden><div class="nasab-track"><span>زامل</span><i>←</i><span>جميل</span><i>←</i><span>سليمان</span><i>←</i><span>عبيد</span><i>←</i><span>عويد</span><i>←</i><span>حسن</span><i>←</i><span>شداد</span><i>←</i><span>محمد</span><i>←</i><span>عبدالله</span><i>←</i><span>شاكر</span><i>←</i><span>زيد</span><i>←</i><span>هاشم</span><i>←</i><span>سالم</span><i>←</i><span>عبدالله</span><i>←</i><span>عمر بن الخطاب ﵁</span></div></div>
 </header>
 
 <div class="tabs-bar">
-  <button class="tab-btn active" onclick="switchTab('drill')">🌳 الشجرة التفاعلية</button>
-  <button class="tab-btn" onclick="switchTab('full')">🗺️ الشجرة الكاملة</button>
+  <button class="tab-btn active" onclick="switchTab('drill')">🌳 التفاعلية</button>
+  <button class="tab-btn" onclick="switchTab('full')">🗺️ الكاملة</button>
   <button class="tab-btn" onclick="switchTab('profiles')">👥 الأعضاء</button>
   <button class="tab-btn" onclick="switchTab('log')"><svg class="tab-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7"/><polyline points="3 4 3 9 8 9"/><polyline points="12 7 12 12 15.5 14"/></svg> السجل</button>
 </div>
@@ -572,7 +565,7 @@ function showMe(){
   const t=ME.name?('👤 أنت: '+ME.name):'';
   const lm=document.getElementById('log-me');if(lm)lm.textContent=t;
   let chip=document.getElementById('me-chip');
-  if(!chip){const h=document.querySelector('.hdr');if(h){chip=document.createElement('div');chip.id='me-chip';chip.className='me-chip';h.appendChild(chip);}}
+  if(!chip){const h=document.querySelector('.hdr-row');if(h){chip=document.createElement('div');chip.id='me-chip';chip.className='me-chip';h.appendChild(chip);}}
   if(!chip)return;
   if(!ME.name){chip.innerHTML='';return;}
   const on=navigator.onLine!==false;
@@ -756,9 +749,12 @@ function startCloud(){
 function toggleNasab(){
   const txt=document.getElementById('nasab-text');
   const arrow=document.getElementById('nasab-arrow');
-  if(txt.hidden){txt.removeAttribute('hidden');arrow.classList.add('open')}
+  if(txt.hidden){txt.removeAttribute('hidden');arrow.classList.add('open');txt.scrollLeft=0;}
   else{txt.setAttribute('hidden','');arrow.classList.remove('open')}
+  if(window.measureHeader)window.measureHeader();
 }
+/* السنة الهجرية تتحدث لحالها (أم القرى) */
+try{const y=new Intl.DateTimeFormat('ar-SA-u-ca-islamic-umalqura',{year:'numeric'}).format(new Date());const el=document.getElementById('hijri-year');if(el&&/\d|[٠-٩]/.test(y))el.textContent=y.includes('هـ')?y:y+' هـ';}catch(e){}
 
 /* أيقونات: رجل بشماغ وعقال، امرأة بحجاب — أسلوب ظل نظيف بألوان الموقع */
 function avatarSVG(sex){
@@ -2598,7 +2594,7 @@ function showToast(msg){const t=document.getElementById('toast');t.textContent=m
   let H=0,offset=0;
   const measure=()=>{H=hdr.offsetHeight+tabs.offsetHeight;};
   const apply=()=>{hdr.style.marginTop=(-offset)+'px';};
-  measure();window.addEventListener('resize',()=>{measure();offset=Math.min(offset,H);apply();});
+  measure();window.measureHeader=()=>{measure();offset=Math.min(offset,H);apply();};window.addEventListener('resize',window.measureHeader);
   /* فتح شخص جديد: الهيدر يرجع كامل */
   window.resetHeader=()=>{offset=0;hdr.style.transition='margin-top .2s ease';apply();};
   const prev=new WeakMap();
