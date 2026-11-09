@@ -223,6 +223,11 @@ textarea.info-field-input{resize:vertical;min-height:46px}
 .pc-avatar img,.pc-avatar svg{width:100%;height:100%;object-fit:cover}
 .pc-name{font-family:var(--ff);font-size:.8rem;font-weight:700;color:var(--sepia);margin-bottom:1px}
 .pc-role{font-size:.6rem;color:var(--gold);font-weight:600}
+.pc-stats{display:flex;flex-wrap:wrap;gap:3px;justify-content:center;margin-top:6px}
+.pc-stats span{font:700 .56rem var(--ffb);background:var(--sand-mid);color:var(--sepia);border-radius:8px;padding:1px 6px;white-space:nowrap}
+.pc-stats span b{color:var(--gold)}
+.pc-stats span.tot{background:var(--gold);color:#fff}.pc-stats span.tot b{color:#fff}
+.pc-inc{display:inline-block;width:8px;height:8px;border-radius:50%;background:#d23b3b;margin-inline-start:4px;vertical-align:middle}
 .pc-branch{font-size:.57rem;color:var(--sepia);opacity:.5;margin-top:1px}
 .pc-edit-fab{position:absolute;top:5px;left:5px;width:20px;height:20px;border-radius:50%;background:transparent;border:1px solid color-mix(in srgb,var(--gold) 40%,transparent);cursor:pointer;display:flex;align-items:center;justify-content:center;opacity:.15;transition:opacity .2s}
 .profile-card:hover .pc-edit-fab{opacity:1}
@@ -775,13 +780,16 @@ function avatarHTML(id){const m=FAM[id];if(m.photo)return`<img src="${m.photo}" 
 
 /* ══ TABS ══ */
 let activeTab='drill';
+const TAB_SCROLL={};
 function switchTab(t){
+  {const pw=document.querySelector('.profiles-wrap');if(activeTab==='profiles'&&pw)TAB_SCROLL.profiles=pw.scrollTop;}
+  const same=activeTab===t;
   activeTab=t;
   document.querySelectorAll('.tab-btn').forEach((b,i)=>{b.classList.toggle('active',['drill','full','profiles','log'][i]===t)});
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
   document.getElementById('panel-'+t).classList.add('active');
   if(t==='full')buildFullTree();
-  if(t==='profiles')buildProfiles();
+  if(t==='profiles'){if(!same)buildProfiles();const y=TAB_SCROLL.profiles||0;requestAnimationFrame(()=>{const pw=document.querySelector('.profiles-wrap');if(pw)pw.scrollTop=y;});}
   if(t==='log')loadLog();
   /* شريط الاسم الكامل يخص الشجرة التفاعلية بس */
   const pb=document.getElementById('person-bar');if(pb)pb.hidden=(t!=='drill')||!pb.textContent;
@@ -1803,11 +1811,36 @@ function getBranch(id){
 let PF={q:'',chip:'all'};
 function normAr(t){return String(t||'').replace(/[\u064B-\u0652\u0640]/g,'').replace(/[أإآ]/g,'ا').replace(/ة/g,'ه').replace(/ى/g,'ي').trim().toLowerCase();}
 function firstOf(id){return FAM[id]?.short||shortName(FAM[id]?.name,id)||'';}
+/* أبناء الشخص المباشرين (بدون الأزواج) — للزوجة: أبناؤها من زوجها */
+function directKids(id){
+  const m=FAM[id];if(!m)return[];
+  if(m.role==='wife'&&m.par&&FAM[m.par]){
+    const p=FAM[m.par];
+    return p.sex==='f'?sortedChildren(m.par).filter(k=>FAM[k]&&FAM[k].role!=='wife'):kidsOfCouple(m.par,id);
+  }
+  if(m.role==='root'){const ws=wivesOf(id);return [...new Set(ws.flatMap(w=>kidsOfCouple(id,w)).concat(sortedChildren(id).filter(k=>FAM[k]&&FAM[k].role!=='wife')))];}
+  if(m.sex==='m'&&wivesOf(id).length)return [...new Set(wivesOf(id).flatMap(w=>kidsOfCouple(id,w)).concat(sortedChildren(id).filter(k=>FAM[k]&&FAM[k].role!=='wife')))];
+  return sortedChildren(id).filter(k=>FAM[k]&&FAM[k].role!=='wife');
+}
+/* إحصائية الشخص: أبناء، بنات، أحفاد (كل اللي تحت الأبناء) */
+function famStats(id){
+  const kids=directKids(id);
+  const seen=new Set(kids);let grand=0;
+  const walk=k=>directKids(k).forEach(g=>{if(seen.has(g))return;seen.add(g);grand++;walk(g);});
+  kids.forEach(walk);
+  const sons=kids.filter(k=>FAM[k].sex!=='f').length;
+  return{sons,daughters:kids.length-sons,grand,total:kids.length+grand};
+}
+function rootId(){return Object.keys(FAM).find(k=>FAM[k].role==='root')||'zamil';}
 function isBlood(id){const m=FAM[id];return m&&m.role!=='wife'&&m.role!=='root'&&!m.rada;}
 /* الفلاتر: الكل، أبناء كل زوجة لزامل، الرضاعة، الأولاد، البنات */
 function profileChips(){
   const chips=[{key:'all',label:'الكل',test:()=>true}];
-  const root=Object.keys(FAM).find(k=>FAM[k].role==='root');
+  const root=rootId();
+  const zKids=new Set(directKids(root).filter(k=>!FAM[k].rada));
+  const zAll=new Set();{const walk=k=>directKids(k).forEach(g=>{if(!zAll.has(g)){zAll.add(g);walk(g);}});walk(root);}
+  chips.push({key:'zk',label:'أبناء زامل',test:id=>zKids.has(id)});
+  chips.push({key:'zg',label:'أحفاد زامل',test:id=>zAll.has(id)&&!zKids.has(id)&&!directKids(root).includes(id)});
   if(root) wivesOf(root).forEach(w=>{
     const kids=new Set(kidsOfCouple(root,w));
     chips.push({key:'w:'+w,label:'أبناء '+firstOf(w),test:id=>kids.has(id)&&!FAM[id].rada});
@@ -1815,6 +1848,9 @@ function profileChips(){
   chips.push({key:'rada',label:'الرضاعة',test:id=>!!FAM[id].rada});
   chips.push({key:'m',label:'الأولاد',test:id=>isBlood(id)&&FAM[id].sex!=='f'});
   chips.push({key:'f',label:'البنات',test:id=>isBlood(id)&&FAM[id].sex==='f'});
+  chips.push({key:'alive',label:'الأحياء',test:id=>!isDeceased(id)});
+  chips.push({key:'dead',label:'المتوفين',test:id=>isDeceased(id)});
+  chips.push({key:'inc',label:'⚠️ بيانات ناقصة',test:id=>missingFields(id).length>0});
   return chips;
 }
 function buildProfiles(){
@@ -1848,13 +1884,47 @@ function buildProfiles(){
     card.innerHTML=`<div class="${avcls}${radaCls}">${avatarHTML(id)}</div>
       <div class="pc-name">${escapeHtml(effectiveFullName(id))}${isDeceased(id)?`&zwnj;<span class="rip">${ripText(id)}</span>`:''}</div>
       <div class="pc-role">${m.role==='root'?'الجد الأكبر':m.role==='wife'?'زوجة':(m.rada?(m.sex==='f'?'رضاعة أنثى':'رضاعة ذكر'):getNasab(id))}</div>
-      <div class="pc-branch">${getBranch(id)}</div>`;
-    card.addEventListener('click',()=>{switchTab('drill');setTimeout(()=>{showRoot();openInfoPanel(id)},120)});
+      <div class="pc-branch">${getBranch(id)}</div>${statsHTML(id)}`;
+    if(missingFields(id).length)card.querySelector('.pc-name').insertAdjacentHTML('beforeend','<span class="pc-inc" title="بيانات ناقصة"></span>');
+    card.addEventListener('click',()=>goToInTree(id));
     grid.appendChild(card);
   });
   if(!list.length)grid.innerHTML='<div class="log-empty" style="grid-column:1/-1">ما فيه أحد بهالبحث</div>';
 }
 function filterProfiles(q){PF.q=q;buildProfiles();}
+function statsHTML(id){
+  const s=famStats(id);if(!s.total)return'';
+  const p=[];
+  if(s.sons)p.push(`<span>أبناء <b>${s.sons}</b></span>`);
+  if(s.daughters)p.push(`<span>بنات <b>${s.daughters}</b></span>`);
+  if(s.grand)p.push(`<span>أحفاد <b>${s.grand}</b></span>`);
+  if(p.length>1)p.push(`<span class="tot">الكل <b>${s.total}</b></span>`);
+  return `<div class="pc-stats">${p.join('')}</div>`;
+}
+/* من البطاقة إلى مكان الشخص في الشجرة التفاعلية — والرجوع يمشي على نفس المسار */
+function treeParentOf(id){
+  const m=FAM[id];if(!m)return null;
+  if(m.par&&FAM[m.par])return m.par;
+  return Object.keys(FAM).find(k=>(FAM[k].children||[]).includes(id))||null;
+}
+function goToInTree(id){
+  const chain=[];let c=id,guard=0;
+  while(c&&guard++<40){chain.unshift(c);c=treeParentOf(c);}
+  const clicks=[];
+  chain.forEach((x,i)=>{
+    const par=chain[i-1];
+    /* أب عنده أكثر من زوجة: لازم نختار أم الابن قبل */
+    if(par&&FAM[par].role!=='wife'&&FAM[par].sex!=='f'&&FAM[x].role!=='wife'&&wivesOf(par).length>=2){
+      const mom=wivesOf(par).find(w=>kidsOfCouple(par,w).includes(x));
+      if(mom)clicks.push(mom);
+    }
+    clicks.push(x);
+  });
+  switchTab('drill');
+  showRoot();
+  clicks.forEach(x=>onNodeClick(x));
+  window.scrollTo({top:0,behavior:'smooth'});
+}
 
 /* ══ EDIT (داخل نافذة ⓘ) ══ */
 let editingId=null,pendingPhoto=null,pendingSpouses={},editingRada=false,editingSex='m';
