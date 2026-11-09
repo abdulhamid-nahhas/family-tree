@@ -249,6 +249,16 @@ textarea.info-field-input{resize:vertical;min-height:46px}
 .ftname{font-family:var(--ffb);font-weight:700;fill:var(--sepia)}
 .ftrip{font-size:.72em}
 .ftn{pointer-events:none}
+.ft-hint{position:absolute;inset:0;z-index:6;background:rgba(30,20,10,.55);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:#fff;font-family:var(--ffb);pointer-events:none;transition:opacity .35s;animation:ftHintIn .4s ease}
+.ft-hint.out{opacity:0}
+.ft-hint b{font-size:1.15rem}
+.ft-hint small{font-size:.8rem;opacity:.85;font-weight:600}
+.ft-hand{width:96px;height:96px;animation:ftPinch 1.6s ease-in-out infinite}
+.ft-arr{transform-origin:32px 32px;animation:ftArr 1.6s ease-in-out infinite}
+@keyframes ftPinch{0%,100%{transform:scale(.9)}50%{transform:scale(1.08)}}
+@keyframes ftArr{0%,100%{transform:scale(.8);opacity:.6}50%{transform:scale(1.15);opacity:1}}
+@keyframes ftHintIn{from{opacity:0}to{opacity:1}}
+@media(prefers-reduced-motion:reduce){.ft-hand,.ft-arr{animation:none}}
 
 /* ── PROFILES TAB ── */
 .profiles-wrap{flex:1;overflow-y:auto;padding:12px}
@@ -2012,6 +2022,21 @@ function buildFullTree(){
   wrap.onpointerup=up;wrap.onpointercancel=up;
   wrap.onwheel=e=>{e.preventDefault();const[x,y]=local(e.clientX,e.clientY);zoomAt(FT.z*(e.deltaY<0?1.12:1/1.12),x,y);};
   wrap.ondblclick=e=>e.preventDefault();
+  showPinchHint(wrap);
+}
+/* تلميح: «كبّر بإصبعين» — شاشة شفافة فوق الخريطة، أول مرتين لكل جهاز، وتختفي أول ما تلمس */
+function showPinchHint(wrap){
+  if(window.__ftHintShown)return;window.__ftHintShown=true;
+  let n=0;try{n=+localStorage.getItem('ft_hint_n')||0;}catch(e){}
+  if(n>=2)return;
+  try{localStorage.setItem('ft_hint_n',String(n+1));}catch(e){}
+  const touch=window.matchMedia&&matchMedia('(pointer:coarse)').matches;
+  const ov=document.createElement('div');ov.className='ft-hint';
+  ov.innerHTML=`<svg class="ft-hand" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M24 34V14a4 4 0 0 1 8 0v16"/><path d="M32 28v-4a4 4 0 0 1 8 0v8"/><path d="M40 30a4 4 0 0 1 8 0v10c0 9-6 16-15 16h-2c-6 0-10-3-13-8l-6-10a4 4 0 0 1 7-4l3 4"/><g class="ft-arr"><path d="M10 10l-5-5M5 5v6M5 5h6"/><path d="M54 10l5-5M59 5v6M59 5h-6"/></g></svg>
+    <b>${touch?'كبّر بإصبعين':'كبّر بعجلة الماوس'}</b><small>${touch?'وحرّك بإصبع واحد':'واسحب للتحريك'}</small>`;
+  wrap.appendChild(ov);
+  const bye=()=>{ov.classList.add('out');setTimeout(()=>ov.remove(),350);['pointerdown','wheel'].forEach(t=>wrap.removeEventListener(t,bye,true));};
+  ['pointerdown','wheel'].forEach(t=>wrap.addEventListener(t,bye,true));
 }
 /* تدوير الجوال أو تغيير حجم النافذة: نعيد الحساب */
 window.addEventListener('resize',()=>{if(activeTab==='full'){ftBuilt=false;FT=FT&&{...FT,W:0};buildFullTree();}});
