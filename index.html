@@ -715,10 +715,15 @@ function placeNodes(ids,parentId){
 
 /* ── إعادة رسم عند تغيير حجم النافذة ── */
 let resizeTimer=null;
+let lastResizeW=window.innerWidth;
 window.addEventListener('resize',()=>{
+  /* الكيبورد في الجوال يغيّر الطول بس — لا نعيد الرسم ولا نسكّر نافذة المعلومات */
+  if(window.innerWidth===lastResizeW)return;
+  lastResizeW=window.innerWidth;
   clearTimeout(resizeTimer);
   resizeTimer=setTimeout(()=>{
     if(activeTab!=='drill')return;
+    if(!document.getElementById('info-popup').classList.contains('hidden'))return;
     if(!history.length){showRoot();return;}
     /* أعد رسم آخر حالة */
     const cur=history[history.length-1];
