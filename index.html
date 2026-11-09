@@ -833,8 +833,9 @@ function addNewSpouseFor(ownerId,sex){
    إذا عنده زوجة وحدة: كل أبنائه بدون أم محددة يُحسبون لها */
 function kidsOfCouple(husbandId,wifeId){
   const h=FAM[husbandId]||{};const w=FAM[wifeId]||{};
-  const oneWife=(h.spouseIds||[]).filter(x=>FAM[x]).length===1;
-  const fromH=sortedChildren(husbandId).filter(k=>FAM[k]&&FAM[k].role!=='wife'&&(FAM[k].mother===wifeId||(oneWife&&!FAM[k].mother)));
+  /* الأبناء اللي ما لهم أم محددة يُحسبون للزوجة الأولى */
+  const firstWife=(typeof wivesOf==='function'?wivesOf(husbandId):(h.spouseIds||[]).filter(x=>FAM[x]))[0];
+  const fromH=sortedChildren(husbandId).filter(k=>FAM[k]&&FAM[k].role!=='wife'&&(FAM[k].mother===wifeId||(!FAM[k].mother&&wifeId===firstWife)));
   const fromW=sortedChildren(wifeId).filter(k=>FAM[k]&&!fromH.includes(k));
   return fromH.concat(fromW);
 }
@@ -1811,6 +1812,11 @@ function saveEdit(){
     const spId='sp_'+editingId+'_'+Date.now();addedSpouseId=spId;
     FAM[spId]={name:(selectedSpouseSex==='f'?'زوجة':'زوج'),sex:selectedSpouseSex,role:'wife',par:editingId,children:[],photo:null};
     if(!FAM[editingId].spouseIds) FAM[editingId].spouseIds=[];
+    /* زوجة ثانية: الأبناء الحاليين بدون أم يتسجلون للزوجة الأولى عشان ما يضيعون */
+    const prevWives=wivesOf(editingId);
+    if(prevWives.length===1&&FAM[editingId].sex==='m'){
+      (FAM[editingId].children||[]).forEach(k=>{if(FAM[k]&&FAM[k].role!=='wife'&&!FAM[k].mother)FAM[k].mother=prevWives[0];});
+    }
     FAM[editingId].spouseIds.push(spId);
   }
   /* تطبيق الطفل/ة المحدد */
