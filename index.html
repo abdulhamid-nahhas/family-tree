@@ -965,6 +965,8 @@ function relOfAuto(id){
     if(par.role==='wife'&&par.sex==='f'){const h=husbandOf(m.par);return h?displayName(h):'غير محدد';}
     return displayName(m.par);
   }
+  /* البنت المتزوجة: زوجة لزوجها */
+  if(m.sex==='f'&&wivesOf(id).length)return displayName(wivesOf(id)[0]);
   if(m.mother&&FAM[m.mother])return displayName(m.mother);
   if(!par)return'غير محددة';
   if(par.role==='wife'&&par.sex==='f')return displayName(m.par);     /* زوجات زامل: الأبناء مسجلين عندهن */
@@ -1280,6 +1282,8 @@ function openInfoPanel(id){
     /* إذا كان رضاعة وليس زوج/زوجة، أضف -rada */
     let saved=m.relType||def;
     if(m.rada&&(saved==='son'||saved==='daughter')) saved=saved+'-rada';
+    /* البنت: متزوجة → زوجة، غير متزوجة → ابنة */
+    if(m.role!=='wife'&&m.role!=='root'&&m.sex==='f'&&!m.rada) saved=wivesOf(id).length?'wife':'daughter';
     reltypeEl.value=saved;
   }
   const relofEl=document.getElementById('edit-relof');
