@@ -27,8 +27,7 @@
 html,body{height:100%;overflow:hidden}
 body{font-family:var(--ffb);background:var(--bg);color:var(--fg);display:flex;flex-direction:column}
 /* الهيدر والتبويبات يختفون لما تنزل، والمفتاح يبقى ثابت */
-.hdr{transition:margin-top .25s ease}
-body.hdr-hidden .hdr{margin-top:calc(-1 * var(--hdrH,0px))}
+
 
 .hdr{background:var(--sand);border-bottom:2px solid var(--gold);flex-shrink:0}
 .hdr-stripe{height:4px;background:linear-gradient(90deg,var(--rose),var(--gold),var(--gold-lt),var(--gold),var(--rose))}
@@ -960,6 +959,7 @@ function hideAll(){
   /* كل ما تفتح شخص جديد: ارجع لأعلى الشاشة */
   try{stage.scrollTo({top:0,left:0,behavior:'smooth'});}catch(e){stage.scrollTop=0;}
   try{window.scrollTo({top:0,behavior:'smooth'});}catch(e){}
+  if(window.resetHeader)window.resetHeader();
   Object.values(nodeEls).forEach(el=>{el.classList.remove('visible');el.classList.add('hidden')});
   lineEls.forEach(l=>l.remove());lineEls=[];
   clearSpouses();
@@ -1967,45 +1967,35 @@ function refreshUI(id){
 function closeModal(){closeInfo()} /* للتوافق */
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.removeAttribute('hidden');setTimeout(()=>t.setAttribute('hidden',''),2800)}
 
-/* إخفاء الهيدر عند النزول وإظهاره عند الطلوع */
+/* الهيدر مرن مع السكرول: ينزل معك شوي شوي (ربع، نص، كله) ويرجع بنفس الطريقة لما تطلع */
 (function(){
   const hdr=document.querySelector('.hdr'),tabs=document.querySelector('.tabs-bar');
-  const setH=()=>document.body.style.setProperty('--hdrH',(hdr.offsetHeight+tabs.offsetHeight)+'px');
-  setH();window.addEventListener('resize',setH);
-  const last=new WeakMap();
-  let lockUntil=0;
-  const setHidden=v=>{
-    if(document.body.classList.contains('hdr-hidden')===v)return;
-    document.body.classList.toggle('hdr-hidden',v);
-    /* أثناء حركة الهيدر يتغير طول المنطقة ويتحرك السكرول لحاله — نتجاهله عشان ما يصير تذبذب */
-    lockUntil=Date.now()+450;
-  };
-  /* أول ما يتحرك إصبعك لفوق (تنزل بالصفحة) يختفي الهيد، وأول ما يتحرك لتحت يرجع */
-  const inPopup=t=>t&&t.closest&&t.closest('#info-popup,#crop-modal,#photo-fallback');
-  let ty=null;
-  document.addEventListener('touchstart',e=>{if(inPopup(e.target))return;ty=e.touches[0].clientY;},{passive:true});
-  document.addEventListener('touchmove',e=>{
-    if(ty==null||inPopup(e.target))return;
-    const y=e.touches[0].clientY,dy=y-ty;
-    if(Math.abs(dy)<6||Date.now()<lockUntil)return;
-    if(dy<0){setH();setHidden(true);}   /* الإصبع طالع → الصفحة نازلة */
-    else{
-      /* الإصبع نازل: يرجع الهيد بس لو وصلنا أول الصفحة أو سحبت لتحت بوضوح */
-      setHidden(false);
-    }
-    ty=y;
-  },{passive:true});
-  document.addEventListener('touchend',()=>{ty=null;},{passive:true});
-  /* الماوس */
-  document.addEventListener('wheel',e=>{
-    if(inPopup(e.target)||Date.now()<lockUntil)return;
-    if(e.deltaY>2){setH();setHidden(true);} else if(e.deltaY<-2) setHidden(false);
-  },{passive:true});
-  /* أول الصفحة: الهيد دايماً ظاهر */
+  let H=0,offset=0;
+  const measure=()=>{H=hdr.offsetHeight+tabs.offsetHeight;};
+  const apply=()=>{hdr.style.marginTop=(-offset)+'px';};
+  measure();window.addEventListener('resize',()=>{measure();offset=Math.min(offset,H);apply();});
+  /* فتح شخص جديد: الهيدر يرجع كامل */
+  window.resetHeader=()=>{offset=0;hdr.style.transition='margin-top .2s ease';apply();};
+  const prev=new WeakMap();
+  const skip=el=>el.closest&&el.closest('#info-popup,#crop-modal,#photo-fallback,.modal-box');
   document.addEventListener('scroll',e=>{
     const el=e.target===document?document.scrollingElement:e.target;
-    if(!el||Date.now()<lockUntil)return;
-    last.set(el,el.scrollTop);
+    if(!el||el.nodeType!==1||skip(el))return;
+    const t=el.scrollTop,p=prev.has(el)?prev.get(el):t;
+    const d=t-p;
+    if(!d){prev.set(el,t);return;}
+    if(!H)measure();
+    let nt=t;
+    if(d>0&&offset<H){            /* نازل: الهيدر ياخذ الحركة أول لين يختفي */
+      const take=Math.min(d,H-offset);offset+=take;nt=t-take;
+    }else if(d<0&&offset>0){      /* طالع: الهيدر يرجع بنفس المقدار */
+      const give=Math.min(-d,offset);offset-=give;nt=t+give;
+    }
+    hdr.style.transition='none';apply();
+    if(nt!==t)el.scrollTop=nt;     /* نعوّض الحركة عشان المحتوى يمشي مع إصبعك بالضبط */
+    /* وصلت أول الصفحة: الهيدر يرجع كامل */
+    if(el.scrollTop<=0&&offset>0){offset=0;hdr.style.transition='margin-top .2s ease';apply();}
+    prev.set(el,el.scrollTop);
   },true);
 })();
 
