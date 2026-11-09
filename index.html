@@ -1973,13 +1973,26 @@ function showToast(msg){const t=document.getElementById('toast');t.textContent=m
   const setH=()=>document.body.style.setProperty('--hdrH',(hdr.offsetHeight+tabs.offsetHeight)+'px');
   setH();window.addEventListener('resize',setH);
   const last=new WeakMap();
+  let lockUntil=0;
+  const setHidden=v=>{
+    if(document.body.classList.contains('hdr-hidden')===v)return;
+    document.body.classList.toggle('hdr-hidden',v);
+    /* أثناء حركة الهيدر يتغير طول المنطقة ويتحرك السكرول لحاله — نتجاهله عشان ما يصير تذبذب */
+    lockUntil=Date.now()+450;
+  };
   document.addEventListener('scroll',e=>{
     const el=e.target===document?document.scrollingElement:e.target;
-    if(!el||el.scrollHeight<=el.clientHeight+60)return;
-    const t=el.scrollTop,prev=last.get(el)||0;last.set(el,t);
-    if(t<20) document.body.classList.remove('hdr-hidden');
-    else if(t>prev+6){setH();document.body.classList.add('hdr-hidden');}
-    else if(t<prev-6) document.body.classList.remove('hdr-hidden');
+    if(!el)return;
+    const t=el.scrollTop,prev=last.get(el)??t;last.set(el,t);
+    if(Date.now()<lockUntil)return;
+    const hdrH=parseFloat(getComputedStyle(document.body).getPropertyValue('--hdrH'))||0;
+    const room=el.scrollHeight-el.clientHeight;
+    /* لو المحتوى قصير وما يكفي يتمرر حتى بعد إخفاء الهيدر: لا نخفيه أصلاً */
+    const hidden=document.body.classList.contains('hdr-hidden');
+    if(!hidden&&room<hdrH+80){return;}
+    if(t<20) setHidden(false);
+    else if(t>prev+8){setH();setHidden(true);}
+    else if(t<prev-8) setHidden(false);
   },true);
 })();
 
