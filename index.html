@@ -1980,19 +1980,32 @@ function showToast(msg){const t=document.getElementById('toast');t.textContent=m
     /* أثناء حركة الهيدر يتغير طول المنطقة ويتحرك السكرول لحاله — نتجاهله عشان ما يصير تذبذب */
     lockUntil=Date.now()+450;
   };
+  /* أول ما يتحرك إصبعك لفوق (تنزل بالصفحة) يختفي الهيد، وأول ما يتحرك لتحت يرجع */
+  const inPopup=t=>t&&t.closest&&t.closest('#info-popup,#crop-modal,#photo-fallback');
+  let ty=null;
+  document.addEventListener('touchstart',e=>{if(inPopup(e.target))return;ty=e.touches[0].clientY;},{passive:true});
+  document.addEventListener('touchmove',e=>{
+    if(ty==null||inPopup(e.target))return;
+    const y=e.touches[0].clientY,dy=y-ty;
+    if(Math.abs(dy)<6||Date.now()<lockUntil)return;
+    if(dy<0){setH();setHidden(true);}   /* الإصبع طالع → الصفحة نازلة */
+    else{
+      /* الإصبع نازل: يرجع الهيد بس لو وصلنا أول الصفحة أو سحبت لتحت بوضوح */
+      setHidden(false);
+    }
+    ty=y;
+  },{passive:true});
+  document.addEventListener('touchend',()=>{ty=null;},{passive:true});
+  /* الماوس */
+  document.addEventListener('wheel',e=>{
+    if(inPopup(e.target)||Date.now()<lockUntil)return;
+    if(e.deltaY>2){setH();setHidden(true);} else if(e.deltaY<-2) setHidden(false);
+  },{passive:true});
+  /* أول الصفحة: الهيد دايماً ظاهر */
   document.addEventListener('scroll',e=>{
     const el=e.target===document?document.scrollingElement:e.target;
-    if(!el)return;
-    const t=el.scrollTop,prev=last.get(el)??t;last.set(el,t);
-    if(Date.now()<lockUntil)return;
-    const hdrH=parseFloat(getComputedStyle(document.body).getPropertyValue('--hdrH'))||0;
-    const room=el.scrollHeight-el.clientHeight;
-    /* لو المحتوى قصير وما يكفي يتمرر حتى بعد إخفاء الهيدر: لا نخفيه أصلاً */
-    const hidden=document.body.classList.contains('hdr-hidden');
-    if(!hidden&&room<hdrH+80){return;}
-    if(t<20) setHidden(false);
-    else if(t>prev+8){setH();setHidden(true);}
-    else if(t<prev-8) setHidden(false);
+    if(!el||Date.now()<lockUntil)return;
+    last.set(el,el.scrollTop);
   },true);
 })();
 
