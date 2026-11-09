@@ -1951,10 +1951,27 @@ function goToInTree(id){
     }
     clicks.push(x);
   });
+  /* نحوّل الضغطات لمسار الرجوع (بدون رسم كل خطوة) ثم نرسم الشاشة الأخيرة مرة وحدة */
+  const entries=[];
+  clicks.forEach(x=>{
+    const m=FAM[x];let en=x;
+    if(m.role==='wife')en='sp:'+x;
+    else if(m.sex==='f'&&m.role!=='root'&&wivesOf(x).length===1)en='sp:'+wivesOf(x)[0];
+    if(entries[entries.length-1]!==en)entries.push(en);
+  });
   switchTab('drill');
-  showRoot();
-  clicks.forEach(x=>onNodeClick(x));
-  window.scrollTo({top:0,behavior:'smooth'});
+  closeInfo();
+  flipFrom=null;
+  requestAnimationFrame(()=>{
+    hideAll();
+    const last=entries.pop();
+    history=entries.slice();
+    flipFrom=null;
+    openEntry(last);
+    flipFrom=null;
+    /* بنت متزوجة: الشاشة شاشة زوجها لكن ⓘ يكون عليها هي */
+    if(String(last).startsWith('sp:')&&last.slice(3)!==id){const seq=renderSeq;setTimeout(()=>{if(seq===renderSeq)setInfoOn(id);},50);}
+  });
 }
 
 /* ══ EDIT (داخل نافذة ⓘ) ══ */
