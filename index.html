@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>شجرة آل نحاس</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -24,7 +24,7 @@
   --border:rgba(200,150,58,.20);color-scheme:dark;
 }}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-html,body{height:100%;overflow:hidden}
+html,body{height:100%;overflow:hidden;touch-action:pan-x pan-y;-webkit-text-size-adjust:100%;text-size-adjust:100%}
 body{font-family:var(--ffb);background:var(--bg);color:var(--fg);display:flex;flex-direction:column}
 /* الهيدر والتبويبات يختفون لما تنزل، والمفتاح يبقى ثابت */
 
@@ -37,7 +37,7 @@ body{font-family:var(--ffb);background:var(--bg);color:var(--fg);display:flex;fl
 .home-btn:active{transform:scale(.94)}
 .hdr-txt{flex:1;min-width:0}
 .hdr-title{font-family:var(--ff);font-size:clamp(1.05rem,4.6vw,1.5rem);font-weight:700;color:var(--sepia);line-height:1.25}
-.hdr-sub{font:700 .66rem var(--ffb);color:var(--gold);display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+.hdr-sub{font:700 clamp(.74rem,3.6vw,.88rem) var(--ffb);color:var(--gold);display:flex;align-items:center;gap:5px;flex-wrap:nowrap;white-space:nowrap}
 .nasab-toggle{background:none;border:none;cursor:pointer;display:inline-flex;align-items:center;gap:3px;padding:0;color:var(--gold);font:inherit}
 .nasab-label{font:inherit;color:inherit;text-decoration:underline;text-underline-offset:3px}
 .nasab-arrow{font-size:.5rem;color:var(--gold);transition:transform .25s;text-decoration:none}
@@ -74,7 +74,7 @@ body{font-family:var(--ffb);background:var(--bg);color:var(--fg);display:flex;fl
 .panel.active{display:flex;flex-direction:column}
 
 /* ── DRILL TAB ── */
-.stage{flex:1;position:relative;overflow:auto;-webkit-overflow-scrolling:touch}
+.stage{flex:1;position:relative;overflow-x:hidden;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior-x:none}
 #canvas{width:100%;min-height:100%;position:relative}
 #lines-svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}
 /* خط الأبناء — ذهبي عادي */
@@ -755,6 +755,9 @@ function toggleNasab(){
   else{txt.setAttribute('hidden','');arrow.classList.remove('open')}
   if(window.measureHeader)window.measureHeader();
 }
+/* الصفحة ثابتة: ما تتكبّر بالأصابع (الآيفون يتجاهل إعداد الشاشة فنمنعه هنا) */
+['gesturestart','gesturechange','gestureend'].forEach(t=>document.addEventListener(t,e=>e.preventDefault(),{passive:false}));
+document.addEventListener('touchmove',e=>{if(e.scale!==undefined&&e.scale!==1&&!e.target.closest('#full-tree-wrap,#crop-modal,#photo-viewer,canvas'))e.preventDefault();},{passive:false});
 /* زر الرئيسية: الشعار واسم الشجرة يحدّثون الصفحة */
 function goHome(){location.reload();}
 /* السنة الهجرية تتحدث لحالها (أم القرى) */
