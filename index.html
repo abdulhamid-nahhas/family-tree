@@ -332,7 +332,7 @@ textarea.form-input{resize:vertical;min-height:52px}
       </div>
       <div class="info-field-row" style="flex:1">
         <label class="info-field-label">لمن؟</label>
-        <input id="edit-relof" class="info-field-input" type="text" placeholder="اسم الأب / الأم / الزوج / الزوجة">
+        <input id="edit-relof" class="info-field-input" type="text" readonly tabindex="-1" title="تلقائي" style="opacity:.8;cursor:default" placeholder="—">
       </div>
     </div>
     <!-- النسب المخفي (للحفظ فقط) -->
@@ -416,7 +416,7 @@ let FAM = {
 
 
   /* ── زوجة 2: فائزة المنصوري ── */
-  faiza:{name:'فائزة أحمد المنصوري',sex:'f',role:'wife',bio:'الزوجة الثانية',children:['abdulrahman','husam_f','abdulhamid','ahlam','abdulmajid','muhammad_f','hanan','layan']},
+  faiza:{name:'فائزة أحمد يحيى حسن',sex:'f',role:'wife',bio:'الزوجة الثانية',children:['abdulrahman','husam_f','abdulhamid','ahlam','abdulmajid','muhammad_f','hanan','layan']},
   abdulrahman:{name:'عبدالرحمن',sex:'m',par:'faiza',children:['jamal','ibthal'],spouse:{name:'زوجة عبدالرحمن',sex:'f'}},
   jamal:{name:'جمال',sex:'m',par:'abdulrahman',children:[]},
   ibthal:{name:'ابتهال',sex:'f',par:'abdulrahman',children:[]},
@@ -949,9 +949,32 @@ function syncFullName(){
   }
   lastAutoFirst=sh.value.trim();
 }
+/* "لمن؟" تلقائي:
+   - ابن/ابنة → اسم الأم الكامل (اسم الأب موجود في الاسم الكامل)
+   - ابن/ابنة رضاعة → الأب: زوج اللي رضّعت
+   - زوج/زوجة → الاسم الكامل للزوج أو الزوجة
+   - الأم مو معروفة → غير محددة */
+function displayName(x){const m=FAM[x];if(!m)return'';return (m.role==='wife'||m.rada)?(m.name||''):(nasabFullName(x)||m.name||'');}
+function relOfAuto(id){
+  const m=FAM[id];if(!m)return'';
+  if(m.role==='root')return'';
+  if(m.role==='wife'){const h=husbandOf(id);return h?displayName(h):'غير محدد';}
+  const par=FAM[m.par];
+  if(m.rada){
+    if(!par)return'غير محدد';
+    if(par.role==='wife'&&par.sex==='f'){const h=husbandOf(m.par);return h?displayName(h):'غير محدد';}
+    return displayName(m.par);
+  }
+  if(m.mother&&FAM[m.mother])return displayName(m.mother);
+  if(!par)return'غير محددة';
+  if(par.role==='wife'&&par.sex==='f')return displayName(m.par);     /* زوجات زامل: الأبناء مسجلين عندهن */
+  if(par.sex==='f')return displayName(m.par);                          /* بنت: الأم هي البنت نفسها */
+  const ws=wivesOf(m.par);return ws.length?displayName(ws[0]):'غير محددة';
+}
 function showPersonBar(id){
   const bar=document.getElementById('person-bar');if(!bar)return;
-  const t=id&&FAM[id]?nasabFullName(id):'';
+  let t=id&&FAM[id]?nasabFullName(id):'';
+  if(t&&FAM[id]&&!FAM[id].rada&&FAM[id].role!=='wife'&&FAM[id].role!=='root'&&!fatherOf(id))t+=' (الأب غير محدد)';
   setNameWithRip(bar,id,t);bar.hidden=!t;
 }
 
@@ -1260,7 +1283,8 @@ function openInfoPanel(id){
     reltypeEl.value=saved;
   }
   const relofEl=document.getElementById('edit-relof');
-  if(relofEl){
+  if(relofEl){relofEl.value=relOfAuto(id);}
+  if(false){
     if(m.relOf){
       relofEl.value=m.relOf;
     } else {
@@ -1575,8 +1599,9 @@ function onRelTypeChange(){
   /* لمن: اقتراح تلقائي لأول مرة */
   const parId=FAM[editingId]?.par;
   const relOfEl=document.getElementById('edit-relof');
-  if(relOfEl&&!relOfEl.value&&parId&&FAM[parId]){
-    relOfEl.value=FAM[parId].short||FAM[parId].name||'';
+  if(relOfEl&&editingId){
+    /* نجرب النوع الجديد مؤقتاً عشان "لمن؟" يتحدث */
+    const m=FAM[editingId],old=m.rada;m.rada=isRada;relOfEl.value=relOfAuto(editingId);m.rada=old;
   }
 }
 function updateRadaUI(){
@@ -1899,7 +1924,7 @@ function saveEdit(){
   const reltypeVal=document.getElementById('edit-reltype')?.value;
   if(reltypeVal) FAM[editingId].relType=reltypeVal;
   const relofVal=(document.getElementById('edit-relof')?.value||'').trim();
-  if(relofVal) FAM[editingId].relOf=relofVal; else delete FAM[editingId].relOf;
+  delete FAM[editingId].relOf; /* "لمن؟" صار تلقائي */
 
   /* تطبيق الزوج/ة المحدد */
   let addedSpouseId=null;
