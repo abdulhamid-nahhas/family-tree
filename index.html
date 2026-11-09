@@ -1009,18 +1009,31 @@ function spouseLink(aEl,bEl){
   const line=document.createElement('div');
   line.style.cssText='position:absolute;height:0;border-top:2.5px dashed var(--gold-lt);opacity:.85;transform:translateY(-50%);pointer-events:none;z-index:1';
   canvas.appendChild(line);spouseEls.push(line);
-  requestAnimationFrame(()=>{
+  /* المعادلة: من حافة الدائرة الأولى إلى حافة الثانية ناقص فراغ صغير من الجهتين، على مستوى منتصف الدائرة.
+     نعيد القياس كل إطار لين تستقر الحركة (الصور تتحرك وتكبر) — عشان يطلع صح بالجوال والكمبيوتر */
+  const place=()=>{
+    if(!line.isConnected||!aEl.isConnected||!bEl.isConnected)return false;
+    const ringA=aEl.querySelector('.avatar-ring'),ringB=bEl.querySelector('.avatar-ring');if(!ringA||!ringB)return false;
     const cr=canvas.getBoundingClientRect();
-    const ra=aEl.querySelector('.avatar-ring').getBoundingClientRect();
-    const rb=bEl.querySelector('.avatar-ring').getBoundingClientRect();
+    const sc=canvas.offsetWidth?cr.width/canvas.offsetWidth:1; /* لو الشجرة مكبّرة/مصغّرة */
+    const ra=ringA.getBoundingClientRect(),rb=ringB.getBoundingClientRect();
     const [l,r]=ra.left<rb.left?[ra,rb]:[rb,ra];
-    const GAP=6;
-    line.style.left=(l.right-cr.left+GAP)+'px';
-    line.style.width=Math.max(8,r.left-l.right-2*GAP)+'px';
-    line.style.top=((ra.top+ra.height/2)-cr.top)+'px';
-  });
+    const GAP=6*sc;
+    const width=r.left-l.right-2*GAP;
+    line.style.display=width<4?'none':'';
+    line.style.left=((l.right+GAP-cr.left)/sc)+'px';
+    line.style.width=(Math.max(0,width)/sc)+'px';
+    line.style.top=(((l.top+l.height/2+r.top+r.height/2)/2-cr.top)/sc)+'px';
+    return true;
+  };
+  const t0=performance.now();
+  const loop=()=>{if(place()&&performance.now()-t0<2500)requestAnimationFrame(loop);};
+  requestAnimationFrame(loop);
+  line._place=place;
   return line;
 }
+/* تغيير حجم الشاشة (تدوير الجوال أو تكبير نافذة الكمبيوتر): نعيد ضبط خطوط الأزواج */
+window.addEventListener('resize',()=>{const t0=performance.now();const f=()=>{spouseEls.forEach(e=>e._place&&e._place());if(performance.now()-t0<800)requestAnimationFrame(f);};requestAnimationFrame(f);});
 
 function showSpouseFor(id){
   const m=FAM[id];
