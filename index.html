@@ -109,6 +109,9 @@ body.hdr-hidden .hdr{margin-top:calc(-1 * var(--hdrH,0px))}
 .spouse-line{position:absolute;pointer-events:none}
 .node-name{font-family:var(--ff);font-size:.8rem;font-weight:700;color:var(--sepia);text-align:center;background:var(--card);border:1px solid var(--border);border-radius:7px;padding:3px 9px;max-width:95px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;box-shadow:0 1px 4px rgba(0,0,0,.07)}
 .node.root .node-name{font-size:.92rem;max-width:115px}
+/* رحمه الله — خط صغير بعد الاسم */
+.rip{font-size:.55em;font-weight:600;opacity:.85;margin-inline-start:3px;vertical-align:.35em;white-space:nowrap}
+.node-name.has-rip{max-width:130px}
 .node:hover .avatar-ring{box-shadow:0 0 0 3px color-mix(in srgb,var(--gold) 40%,transparent)}
 /* رقم ترتيب الولادة */
 .birth-order{position:absolute;top:-6px;left:50%;transform:translateX(-50%);
@@ -653,7 +656,7 @@ function createNode(id){
   }
   awrap.appendChild(ring);awrap.appendChild(infoBtn);awrap.appendChild(backHint);
   /* اسم واحد فقط */
-  const lbl=document.createElement('div');lbl.className='node-name';lbl.textContent=shortName(m.name,id);
+  const lbl=document.createElement('div');lbl.className='node-name';setNameWithRip(lbl,id,shortName(m.name,id));
   div.appendChild(awrap);div.appendChild(lbl);
   div.addEventListener('click',e=>{e.stopPropagation();onNodeClick(id)});
   canvas.appendChild(div);nodeEls[id]=div;return div;
@@ -901,10 +904,19 @@ function fullName(id){
   }
   return parts.join(' ');
 }
+/* المتوفى: يكتب بعد اسمه "رحمه الله / رحمها الله" بخط صغير */
+function isDeceased(id){const d=FAM[id]?.death;return !!(d&&String(d).trim());}
+function ripText(id){return FAM[id]?.sex==='f'?'رحمها الله':'رحمه الله';}
+function setNameWithRip(el,id,text){
+  if(!el)return;
+  el.textContent=text;
+  if(isDeceased(id)){const r=document.createElement('span');r.className='rip';r.textContent=ripText(id);el.appendChild(r);el.classList.add('has-rip');}
+  else el.classList.remove('has-rip');
+}
 function showPersonBar(id){
   const bar=document.getElementById('person-bar');if(!bar)return;
   const t=id&&FAM[id]?fullName(id):'';
-  bar.textContent=t;bar.hidden=!t;
+  setNameWithRip(bar,id,t);bar.hidden=!t;
 }
 
 /* ينقل زر ⓘ للشخص اللي ضغطت عليه — بدون ما يفتح المعلومات */
@@ -1152,7 +1164,7 @@ function openInfoPanel(id){
   avEl.className='info-av'+(m.rada?(m.sex==='f'?' rada-f':' rada-m'):(m.sex==='f'?' female':''))+(m.role==='root'?' root':'');
   /* اسم في رأس النافذة */
   const nameEl=document.getElementById('info-name');
-  if(nameEl) nameEl.textContent=m.short||shortName(m.name,null)||m.name;
+  if(nameEl) setNameWithRip(nameEl,id,m.short||shortName(m.name,null)||m.name);
   /* حقول التعديل */
   document.getElementById('edit-short').value=m.short||shortName(m.name,null)||'';
   document.getElementById('edit-name').value=m.name||'';
@@ -1390,7 +1402,7 @@ function buildProfiles(){
     const avcls='pc-avatar'+(m.sex==='f'?' female':'')+(m.rada?' rada':'')+(m.role==='root'?' root':'');
     const radaCls=m.rada?(m.sex==='f'?' rada rada-f':' rada rada-m'):'';
     card.innerHTML=`<div class="${avcls}${radaCls}">${avatarHTML(id)}</div>
-      <div class="pc-name">${m.name}</div>
+      <div class="pc-name">${m.name}${isDeceased(id)?`<span class="rip">${ripText(id)}</span>`:''}</div>
       <div class="pc-role">${m.role==='root'?'الجد الأكبر':m.role==='wife'?'زوجة':(m.rada?(m.sex==='f'?'رضاعة أنثى':'رضاعة ذكر'):getNasab(id))}</div>
       <div class="pc-branch">${getBranch(id)}</div>`;
     card.addEventListener('click',()=>{switchTab('drill');setTimeout(()=>{showRoot();openInfoPanel(id)},120)});
@@ -1909,7 +1921,7 @@ function refreshUI(id){
       ring.innerHTML=avatarHTML(id);
       ring.className='avatar-ring'+(m.sex==='f'?' female':'')+(m.rada?' rada':'')+(m.role==='root'?' root':'');
     }
-    const lbl=nodeEls[id].querySelector('.node-name');if(lbl)lbl.textContent=m.short||shortName(m.name,id);
+    const lbl=nodeEls[id].querySelector('.node-name');if(lbl)setNameWithRip(lbl,id,m.short||shortName(m.name,id));
   }
   const card=document.querySelector(`.profile-card[data-id="${id}"]`);
   if(card){
@@ -1918,7 +1930,7 @@ function refreshUI(id){
       av.innerHTML=avatarHTML(id);
       av.className='pc-avatar'+(m.sex==='f'?' female':'')+(m.rada?' rada':'')+(m.role==='root'?' root':'')+(m.rada?(m.sex==='f'?' rada rada-f':' rada rada-m'):'');
     }
-    const nm=card.querySelector('.pc-name');if(nm)nm.textContent=m.name;
+    const nm=card.querySelector('.pc-name');if(nm)setNameWithRip(nm,id,m.name);
     const role=card.querySelector('.pc-role');
     if(role)role.textContent=m.role==='root'?'الجد الأكبر':m.role==='wife'?'زوجة':(m.rada?(m.sex==='f'?'رضاعة أنثى':'رضاعة ذكر'):getNasab(id));
   }
