@@ -620,6 +620,7 @@ function nameOfData(d,id){return (d&&(d.short||(d.name||'').split(' ')[0]))||id;
 function saveData(){
   try{localStorage.setItem('fam_data',JSON.stringify(FAM))}catch(e){}
   pushToCloud();
+  setTimeout(()=>{try{refreshShown()}catch(e){console.error(e)}},0); /* التغيير يبان فوراً */
 }
 async function pushToCloud(){
   if(!sb)return;
@@ -691,7 +692,8 @@ async function deleteMyName(){
   await sb.from('activity_log').delete().eq('device_id',ME.device).eq('action','تسجيل');
   await sb.from('visitors').delete().eq('device_id',ME.device);
   ME.name=null;showMe();
-  showToast('✓ انحذف اسمك — حدّث الصفحة واكتب اسمك من جديد');
+  showToast('✓ انحذف اسمك — اكتب اسمك من جديد');
+  askName();
   loadLog();
 }
 
@@ -718,6 +720,7 @@ async function pullFromCloud(){
   cloudJSON={};data.forEach(r=>cloudJSON[r.id]=JSON.stringify(r.data));
   try{localStorage.setItem('fam_data',JSON.stringify(FAM))}catch(e){}
   rerenderCurrent();
+  refreshShown();
 }
 function startCloud(){
   if(!sb)return;
@@ -830,8 +833,35 @@ function shortName(fullName,id){
   return fullName?fullName.split(' ')[0]:''
 }
 
+/* بصمة اللي يظهر على الدائرة — لو تغيّرت نحدّث الدائرة نفسها فوراً */
+function nodeSig(id){
+  const m=FAM[id]||{};const ph=m.photo||'';
+  return [m.name,m.short,m.sex,m.role,m.rada?1:0,m.death||'',m.birth||'',ph.length,ph.slice(-24)].join('|');
+}
+function refreshNode(id){
+  const el=nodeEls[id],m=FAM[id];if(!el||!m)return;
+  if(el.dataset.sig===nodeSig(id))return;
+  const isRoot=m.role==='root';
+  const ring=el.querySelector('.avatar-ring');
+  if(ring){
+    const big=ring.classList.contains('big');
+    ring.className='avatar-ring'+(m.sex==='f'?' female':'')+(m.rada?' rada':'')+(isRoot?' root':'')+(big?' big':'');
+    ring.innerHTML=avatarHTML(id);
+  }
+  const lbl=el.querySelector('.node-name');if(lbl)setNameWithRip(lbl,id,shortName(m.name,id));
+  updateIncomplete(id);
+  el.dataset.sig=nodeSig(id);
+}
+/* يحدّث كل الدوائر الظاهرة + شريط الاسم + البطاقات بعد أي تغيير بالبيانات */
+function refreshShown(){
+  Object.keys(nodeEls).forEach(id=>{if(!FAM[id])return;if(nodeEls[id].isConnected)refreshNode(id);});
+  const top=history[history.length-1];
+  if(top&&activeTab==='drill'){const pid=String(top).startsWith('sp:')?top.slice(3):top;if(FAM[pid]&&typeof showPersonBar==='function')showPersonBar(pid);}
+  if(activeTab==='profiles'){const pw=document.querySelector('.profiles-wrap');const y=pw?pw.scrollTop:0;buildProfiles();if(pw)pw.scrollTop=y;}
+  if(activeTab==='full'&&typeof buildFullTree==='function')buildFullTree();
+}
 function createNode(id){
-  if(nodeEls[id]&&nodeEls[id].isConnected)return nodeEls[id];
+  if(nodeEls[id]&&nodeEls[id].isConnected){refreshNode(id);return nodeEls[id];}
   const m=FAM[id];
   const isRoot=m.role==='root';
   const div=document.createElement('div');
@@ -868,6 +898,7 @@ function createNode(id){
   const lbl=document.createElement('div');lbl.className='node-name';setNameWithRip(lbl,id,shortName(m.name,id));
   div.appendChild(awrap);div.appendChild(lbl);
   div.addEventListener('click',e=>{e.stopPropagation();onNodeClick(id)});
+  div.dataset.sig=nodeSig(id);
   canvas.appendChild(div);nodeEls[id]=div;return div;
 }
 
