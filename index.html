@@ -93,6 +93,8 @@ body{font-family:var(--ffb);background:var(--bg);color:var(--fg);display:flex;fl
 .avatar-wrap{position:relative}
 .avatar-ring{width:68px;height:68px;border-radius:50%;border:3px solid var(--blue);overflow:hidden;background:var(--sand-mid);display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.12);transition:box-shadow .2s}
 .avatar-ring.female{border-color:var(--rose)}
+.avatar-ring{position:relative;container-type:inline-size}
+.ring-rip{position:absolute;top:50%;left:-15%;width:130%;transform:translateY(-50%) rotate(-40deg) translateY(-31cqw);background:#3b3b3b;color:#fff;text-align:center;font:700 .5rem var(--ffb);font-size:12cqw;line-height:1.55;z-index:2;pointer-events:none;white-space:nowrap}
 .avatar-ring.rada{border-style:dashed!important}
 .avatar-ring.rada:not(.female){border-color:var(--blue)!important}
 .avatar-ring.rada.female{border-color:var(--rose)!important}
@@ -107,11 +109,12 @@ body{font-family:var(--ffb);background:var(--bg);color:var(--fg);display:flex;fl
 .node.focus .incomplete-dot{top:2px;right:12px}
 .info-missing{margin-top:4px;background:color-mix(in srgb,#E03131 14%,transparent);border:1px solid #E03131;color:#E86060;border-radius:7px;padding:3px 8px;font-size:.68rem;font-weight:700;display:inline-block}
 .avatar-ring img{width:100%;height:100%;object-fit:cover;border-radius:50%}
-.nav-av{position:relative;display:flex;align-items:center;justify-content:center;width:100%;height:100%;container-type:size;overflow:hidden}
+.nav-av{position:relative;background:#E6EDF4;display:flex;align-items:center;justify-content:center;width:100%;height:100%;container-type:size;overflow:hidden}
 .nav-bg{position:absolute;inset:0;opacity:.38}
 .nav-bg svg{width:100%;height:100%;display:block}
 .nav-nm{position:relative;font-family:var(--ffb);font-weight:800;line-height:1.1;text-align:center;white-space:nowrap;max-width:94%;overflow:hidden;font-size:.8rem;font-size:calc(var(--k)*1cqw);
   text-shadow:0 0 1px #fff,1px 1px 0 #fff,-1px -1px 0 #fff,1px -1px 0 #fff,-1px 1px 0 #fff,0 1.5px 0 #fff,0 -1.5px 0 #fff,1.5px 0 0 #fff,-1.5px 0 0 #fff,0 0 6px #fff,0 0 10px rgba(255,255,255,.9)}
+.nav-f{background:#F6E7E2}
 .nav-f .nav-nm{color:#8E4A3E}
 .nav-m .nav-nm{color:#2F5274}
 .default-avatar{width:70%;height:70%;opacity:.6}
@@ -255,6 +258,8 @@ textarea.info-field-input{resize:vertical;min-height:46px}
 .ftl-d{stroke-dasharray:5 4}
 .ftname{font-family:var(--ffb);font-weight:700;fill:var(--sepia)}
 .ftrip{font-size:.72em}
+.ftav{font-family:var(--ffb);font-weight:800;paint-order:stroke;stroke:#fff;stroke-width:3px;stroke-linejoin:round}
+.ftribbon{font-family:var(--ffb);font-weight:700}
 .ftn{pointer-events:none}
 .ft-hint{position:absolute;inset:0;z-index:6;background:rgba(30,20,10,.55);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:#fff;font-family:var(--ffb);pointer-events:none;transition:opacity .35s;animation:ftHintIn .4s ease}
 .ft-hint.out{opacity:0}
@@ -973,7 +978,7 @@ function refreshNode(id){
   if(ring){
     const big=ring.classList.contains('big');
     ring.className='avatar-ring'+(m.sex==='f'?' female':'')+(m.rada?' rada':'')+(isRoot?' root':'')+(big?' big':'');
-    ring.innerHTML=avatarHTML(id);
+    ring.innerHTML=avatarHTML(id)+ripRibbon(id);
   }
   const lbl=el.querySelector('.node-name');if(lbl)setNameWithRip(lbl,id,shortName(m.name,id));
   updateIncomplete(id);
@@ -999,7 +1004,7 @@ function createNode(id){
   awrap.className='avatar-wrap'+(isRoot?' root-wrap':'');
   const ring=document.createElement('div');
   ring.className='avatar-ring'+(m.sex==='f'?' female':'')+(m.rada?' rada':'')+(isRoot?' root':'');
-  ring.innerHTML=avatarHTML(id);
+  ring.innerHTML=avatarHTML(id)+ripRibbon(id);
   setTimeout(()=>updateIncomplete(id),0);
   /* زوجات زامل: الدائرة الوردية كافية للتمييز — لا بادج إضافي */
   /* زر ⓘ على اليمين */
@@ -1305,10 +1310,12 @@ function nasabFullName(id){
 /* المتوفى: يكتب بعد اسمه "رحمه الله / رحمها الله" بخط صغير */
 function isDeceased(id){const d=FAM[id]?.death;return !!(d&&String(d).trim());}
 function ripText(id){return FAM[id]?.sex==='f'?'رحمها الله':'رحمه الله';}
+/* شريط «رحمه الله» المائل فوق الصورة (نفس فكرة البطاقات) */
+function ripRibbon(id){return isDeceased(id)?`<span class="ring-rip">${ripText(id)}</span>`:'';}
 function setNameWithRip(el,id,text){
   if(!el)return;
   el.textContent=text;
-  if(isDeceased(id)){
+  if(false&&isDeceased(id)){
     /* \u200C يمنع الحرف الأخير من الاسم يتصل بـ"رحمه" */
     el.appendChild(document.createTextNode('\u200C'));
     const r=document.createElement('span');r.className='rip';r.textContent=ripText(id);el.appendChild(r);el.classList.add('has-rip');
@@ -1959,12 +1966,17 @@ function buildFullTree(){
     const R=RMAX;
     const pic=(m.photo&&/^(data:image|https?:)/.test(m.photo))
       ?`<image href="${m.photo}" x="${-R}" y="${-R}" width="${2*R}" height="${2*R}" clip-path="url(#${cid})" preserveAspectRatio="xMidYMid slice"/>`
-      :`<g clip-path="url(#${cid})"><circle r="${R}" fill="${m.sex==='f'?'#F6E7E2':'#E6EDF4'}"/><svg x="${-R}" y="${-R}" width="${2*R}" height="${2*R}" viewBox="0 0 64 64">${avatarSVG(m.sex).replace(/^<svg[^>]*>|<\/svg>$/g,'')}</svg></g>`;
-    const name=escapeHtml(shortName(m.name,id))+(isDeceased(id)?` <tspan class="ftrip">${ripText(id)}</tspan>`:'');
+      :(()=>{/* بدون صورة: الأيقونة باهتة والاسم الأول فوقها بحدود بيضاء (نفس التفاعلية) */
+        const n=escapeHtml((m.short||shortName(m.name,id)||'').trim());const L=n.length;const f=R*(L<=3?.62:L<=5?.5:L<=7?.4:.32);
+        return `<g clip-path="url(#${cid})"><circle r="${R}" fill="${m.sex==='f'?'#F6E7E2':'#E6EDF4'}"/><svg x="${-R}" y="${-R}" width="${2*R}" height="${2*R}" viewBox="0 0 64 64" opacity=".38">${avatarSVG(m.sex).replace(/^<svg[^>]*>|<\/svg>$/g,'')}</svg>
+          <text class="ftav" text-anchor="middle" dominant-baseline="central" y="1" font-size="${f.toFixed(1)}" style="fill:${m.sex==='f'?'#8E4A3E':'#2F5274'}">${n}</text></g>`;})();
+    /* شريط «رحمه الله» المائل فوق الصورة */
+    const ribbon=isDeceased(id)?`<g clip-path="url(#${cid})"><g transform="rotate(-40) translate(0,${(-R*.62).toFixed(1)})"><rect x="${-R*1.4}" y="${-R*.17}" width="${R*2.8}" height="${R*.34}" fill="#3b3b3b"/><text text-anchor="middle" dominant-baseline="central" font-size="${(R*.24).toFixed(1)}" style="fill:#fff" class="ftribbon">${ripText(id)}</text></g></g>`:'';
+    const name=escapeHtml(shortName(m.name,id));
     /* طبقتين: نقطة ملونة (للتصغير) — وصورة كاملة (لما تكبّر) */
-    g.innerHTML=`<circle class="ftdot" r="${R}" fill="${col}"/><g class="ftpic"><clipPath id="${cid}"><circle r="${R}"/></clipPath>${pic}<circle r="${R}" fill="none" stroke="${col}" stroke-width="3.5" ${m.rada?'stroke-dasharray="7 4"':''}/></g><text text-anchor="middle" class="ftname">${name}</text>`;
+    g.innerHTML=`<circle class="ftdot" r="${R}" fill="${col}"/><g class="ftpic"><clipPath id="${cid}"><circle r="${R}"/></clipPath>${pic}${ribbon}<circle r="${R}" fill="none" stroke="${col}" stroke-width="3.5" ${m.rada?'stroke-dasharray="7 4"':''}/></g><text text-anchor="middle" class="ftname">${name}</text>`;
     nodesG.appendChild(g);
-    return {id,g,txt:g.querySelector('text'),dot:g.querySelector('.ftdot'),pic:g.querySelector('.ftpic')};
+    return {id,g,txt:g.querySelector('text.ftname'),dot:g.querySelector('.ftdot'),pic:g.querySelector('.ftpic')};
   });
 
   /* ── ٥) الرسم حسب التكبير الحالي ── */
@@ -2879,7 +2891,7 @@ function refreshUI(id){
   if(nodeEls[id]){
     const ring=nodeEls[id].querySelector('.avatar-ring');
     if(ring){
-      ring.innerHTML=avatarHTML(id);
+      ring.innerHTML=avatarHTML(id)+ripRibbon(id);
       ring.className='avatar-ring'+(m.sex==='f'?' female':'')+(m.rada?' rada':'')+(m.role==='root'?' root':'');
     }
     const lbl=nodeEls[id].querySelector('.node-name');if(lbl)setNameWithRip(lbl,id,m.short||shortName(m.name,id));
