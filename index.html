@@ -1315,7 +1315,7 @@ function ripRibbon(id){return isDeceased(id)?`<span class="ring-rip">${ripText(i
 function setNameWithRip(el,id,text){
   if(!el)return;
   el.textContent=text;
-  if(false&&isDeceased(id)){
+  if(isDeceased(id)){
     /* \u200C يمنع الحرف الأخير من الاسم يتصل بـ"رحمه" */
     el.appendChild(document.createTextNode('\u200C'));
     const r=document.createElement('span');r.className='rip';r.textContent=ripText(id);el.appendChild(r);el.classList.add('has-rip');
@@ -1972,7 +1972,7 @@ function buildFullTree(){
           <text class="ftav" text-anchor="middle" dominant-baseline="central" y="1" font-size="${f.toFixed(1)}" style="fill:${m.sex==='f'?'#8E4A3E':'#2F5274'}">${n}</text></g>`;})();
     /* شريط «رحمه الله» المائل فوق الصورة */
     const ribbon=isDeceased(id)?`<g clip-path="url(#${cid})"><g transform="rotate(-40) translate(0,${(-R*.62).toFixed(1)})"><rect x="${-R*1.4}" y="${-R*.17}" width="${R*2.8}" height="${R*.34}" fill="#3b3b3b"/><text text-anchor="middle" dominant-baseline="central" font-size="${(R*.24).toFixed(1)}" style="fill:#fff" class="ftribbon">${ripText(id)}</text></g></g>`:'';
-    const name=escapeHtml(shortName(m.name,id));
+    const name=escapeHtml(shortName(m.name,id))+(isDeceased(id)?` <tspan class="ftrip">${ripText(id)}</tspan>`:'');
     /* طبقتين: نقطة ملونة (للتصغير) — وصورة كاملة (لما تكبّر) */
     g.innerHTML=`<circle class="ftdot" r="${R}" fill="${col}"/><g class="ftpic"><clipPath id="${cid}"><circle r="${R}"/></clipPath>${pic}${ribbon}<circle r="${R}" fill="none" stroke="${col}" stroke-width="3.5" ${m.rada?'stroke-dasharray="7 4"':''}/></g><text text-anchor="middle" class="ftname">${name}</text>`;
     nodesG.appendChild(g);
