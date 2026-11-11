@@ -222,8 +222,9 @@ body{font-family:var(--ffb);background:var(--bg);color:var(--fg);display:flex;fl
 .rada-new span{flex:1}
 .rada-new .sex-btn{flex:0 0 auto;padding:5px 12px}
 /* علامة الربط فوق يسار الصورة — تودّي للشخص الأصلي */
-.node-link-btn{position:absolute;top:-4px;left:-6px;width:22px;height:22px;border-radius:50%;background:var(--gold);border:1.5px solid var(--card);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;z-index:3;box-shadow:0 1px 4px rgba(0,0,0,.25)}
+.node-link-btn{position:absolute;top:-4px;left:-6px;width:22px;height:22px;border-radius:50%;background:var(--gold);border:1.5px solid var(--card);color:#fff;display:none;align-items:center;justify-content:center;cursor:pointer;padding:0;z-index:3;box-shadow:0 1px 4px rgba(0,0,0,.25)}
 .node-link-btn svg{width:12px;height:12px;fill:none;stroke:#fff;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+.node.focus .node-link-btn{display:flex}
 .node.has-back .node-link-btn{top:auto;bottom:-2px}
 .info-av-edit span{display:none}
 /* بدون صورة: زر واضح فوق الصورة مكتوب فيه «إضافة» */
